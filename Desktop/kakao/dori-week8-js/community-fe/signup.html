@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>아무 말 대잔치 - 회원가입</title>
+    <link rel="stylesheet" href="styles/styles.css" />
+</head>
+<body class="signup-page">
+<header>
+    <div class="header-inner">
+        <button class="back-btn" onclick="location.href='index.html'">←</button>
+        <h1>아무 말 대잔치</h1>
+    </div>
+</header>
+
+<main class="signup-section">
+    <h2 class="signup-title">회원가입</h2>
+
+    <div class="signup-box">
+        <div class="profile-area">
+            <label class="profile-label">프로필 사진</label>
+            <div class="profile-upload">
+                <input type="file" id="profile-img" accept="image/*" />
+                <div class="profile-preview">+</div>
+            </div>
+        </div>
+
+        <label>이메일*</label>
+        <input type="email" placeholder="이메일을 입력하세요" />
+
+        <label>비밀번호*</label>
+        <input type="password" placeholder="비밀번호를 입력하세요" />
+
+        <label>비밀번호 확인*</label>
+        <input type="password" placeholder="비밀번호를 한 번 더 입력하세요" />
+
+        <label>닉네임*</label>
+        <input type="text" placeholder="닉네임을 입력하세요" />
+
+        <!-- ✅ 박스 안에 버튼 포함 -->
+        <div class="button-area">
+            <button class="signup-submit">회원가입</button>
+            <button class="go-login" onclick="location.href='index.html'">로그인하러 가기</button>
+        </div>
+    </div>
+</main>
+</body>
+</html>

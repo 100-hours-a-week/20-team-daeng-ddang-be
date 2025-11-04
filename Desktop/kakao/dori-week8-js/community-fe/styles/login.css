@@ -1,0 +1,85 @@
+.login-page {
+    background: rgba(244, 245, 247, 1);
+    color: #111827;
+    font-family: "Noto Sans KR", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ✅ 로그인 섹션을 화면 중앙보다 위로 살짝 이동 */
+.login-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transform: translateY(-10%); /* 🔹 위로 10% 정도 이동 */
+}
+
+.login-title {
+    font-family: "Pretendard", sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.login-box {
+    width: 392px;
+    min-height: 221px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    gap: 10px;
+    border: none;
+}
+
+.login-box label {
+    align-self: flex-start;
+    width: 360px;
+    font-weight: 500;
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+.login-box input {
+    width: 360px;
+    height: 38px;
+    border: 1px solid var(--border-black);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+
+/* ✅ 로그인 버튼 */
+.login-btn {
+    width: 360px;
+    height: 40px;
+    background: var(--primary);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: 0.2s;
+}
+.login-btn:hover {
+    opacity: 0.9;
+}
+
+/* ✅ 회원가입 버튼 */
+.signup-btn {
+    width: 90px;
+    height: 30px;
+    background: transparent;
+    color: black;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    margin: 10px auto 0;
+    display: block;
+}
