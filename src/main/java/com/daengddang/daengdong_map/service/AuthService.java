@@ -25,17 +25,22 @@ public class AuthService {
      * - region 등 프로필 정보는 관여하지 않는다
      */
     @Transactional
-    public User loginOrRegister(KakaoOAuthUser oauthUser) {
+    public LoginResult loginOrRegister(KakaoOAuthUser oauthUser) {
 
         Long kakaoUserId = oauthUser.getKakaoUserId();
 
         User user = userRepository.findByKakaoUserId(kakaoUserId)
-                .orElseGet(() -> createNewUser(kakaoUserId));
+                .orElse(null);
+        boolean isNewUser = false;
+        if (user == null) {
+            user = createNewUser(kakaoUserId);
+            isNewUser = true;
+        }
 
         validateUserStatus(user);
         user.updateLastLoginAt(LocalDateTime.now());
 
-        return user;
+        return new LoginResult(user, isNewUser);
     }
 
     private User createNewUser(Long kakaoUserId) {
@@ -52,4 +57,6 @@ public class AuthService {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
     }
+
+    public record LoginResult(User user, boolean isNewUser) {}
 }

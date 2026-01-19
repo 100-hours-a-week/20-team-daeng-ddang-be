@@ -10,6 +10,8 @@ import com.daengddang.daengdong_map.repository.RefreshTokenRepository;
 import com.daengddang.daengdong_map.security.jwt.JwtProperties;
 import com.daengddang.daengdong_map.security.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,8 +69,7 @@ public class AuthTokenService {
             throw new BaseException(ErrorCode.REFRESH_TOKEN_EXPIRED);
         }
 
-        Claims claims = jwtTokenProvider.parseClaims(refreshToken);
-        Long userId = Long.valueOf(claims.getSubject());
+        Long userId = parseUserId(refreshToken);
 
         /*
          * refresh token 이 DB에 살아 있고 만료되지 않았다면
@@ -87,5 +88,16 @@ public class AuthTokenService {
     @Transactional
     public void logout(Long userId) {
         refreshTokenRepository.deleteAllByUserId(userId);
+    }
+
+    private Long parseUserId(String refreshToken) {
+        try {
+            Claims claims = jwtTokenProvider.parseClaims(refreshToken);
+            return Long.valueOf(claims.getSubject());
+        } catch (ExpiredJwtException e) {
+            throw new BaseException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new BaseException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
     }
 }

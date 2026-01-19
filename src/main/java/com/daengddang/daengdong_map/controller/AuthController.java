@@ -1,32 +1,43 @@
 package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
+import com.daengddang.daengdong_map.common.ErrorCode;
+import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.dto.request.auth.KakaoLoginRequest;
 import com.daengddang.daengdong_map.dto.response.auth.AuthTokenResponse;
 import com.daengddang.daengdong_map.dto.response.auth.TokenPair;
 import com.daengddang.daengdong_map.security.oauth.kakao.model.KakaoOAuthUser;
+import com.daengddang.daengdong_map.security.jwt.JwtTokenProvider;
+import com.daengddang.daengdong_map.security.oauth.kakao.KakaoOAuthProperties;
 import com.daengddang.daengdong_map.service.AuthService;
 import com.daengddang.daengdong_map.service.AuthTokenService;
 import com.daengddang.daengdong_map.service.KakaoOAuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final AuthTokenService authTokenService;
     private final KakaoOAuthService kakaoOAuthService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final KakaoOAuthProperties kakaoOAuthProperties;
 
     /**
      * 카카오 OAuth 로그인
      */
-    @PostMapping("/kakao/login")
+    @PostMapping("/login")
     public ApiResponse<AuthTokenResponse> kakaoLogin(
             @RequestBody KakaoLoginRequest request,
             HttpServletResponse response
@@ -34,7 +45,8 @@ public class AuthController {
         KakaoOAuthUser oauthUser =
                 kakaoOAuthService.authenticate(request.getCode());
 
-        User user = authService.loginOrRegister(oauthUser);
+        AuthService.LoginResult loginResult = authService.loginOrRegister(oauthUser);
+        User user = loginResult.user();
         TokenPair tokenPair = authTokenService.issueTokens(user);
 
         setRefreshTokenCookie(response, tokenPair.getRefreshToken());
@@ -43,19 +55,41 @@ public class AuthController {
                 "로그인에 성공했습니다.",
                 AuthTokenResponse.of(
                         tokenPair.getAccessToken(),
-                        user.getRegion() == null,
+                        loginResult.isNewUser(),
                         user.getId()
                 )
         );
     }
 
     /**
+     * 카카오 로그인 페이지로 리다이렉트
+     */
+    @GetMapping
+    public void redirectToKakao(HttpServletResponse response) throws IOException {
+        response.sendRedirect(buildAuthorizeUrl());
+    }
+
+    /**
+     * 카카오 로그인 URL 반환 (프론트에서 사용)
+     */
+    @GetMapping("/authorize-url")
+    public ApiResponse<String> getAuthorizeUrl() {
+        return ApiResponse.success(
+                "카카오 로그인 URL을 생성했습니다.",
+                buildAuthorizeUrl()
+        );
+    }
+
+    /**
      * Access Token 재발급
      */
-    @PostMapping("/token/refresh")
+    @PostMapping("/token")
     public ApiResponse<AuthTokenResponse> refreshToken(
-            @CookieValue(name = "refreshToken") String refreshToken
+            @CookieValue(name = "refreshToken", required = false) String refreshToken
     ) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BaseException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
         String newAccessToken =
                 authTokenService.reissueAccessToken(refreshToken);
 
@@ -85,6 +119,24 @@ public class AuthController {
         return ApiResponse.success("로그아웃 되었습니다.", null);
     }
 
+    @GetMapping("/callback")
+    public ApiResponse<Map<String, String>> kakaoCallback(
+            @RequestParam(name = "code", required = false) String code,
+            @RequestParam(name = "state", required = false) String state
+    ) {
+        if (code == null || code.isBlank()) {
+            throw new BaseException(ErrorCode.AUTHORIZATION_CODE_INVALID_FORMAT);
+        }
+
+        Map<String, String> data = new LinkedHashMap<>();
+        data.put("code", code);
+        if (state != null && !state.isBlank()) {
+            data.put("state", state);
+        }
+
+        return ApiResponse.success("인가 코드가 전달되었습니다.", data);
+    }
+
     /* ================= Cookie ================= */
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
@@ -104,9 +156,31 @@ public class AuthController {
     }
 
     private Long extractUserId(String authorizationHeader) {
-        // Bearer xxx
-        return Long.valueOf(
-                authorizationHeader.substring(7)
-        );
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String token = authorizationHeader.substring(7);
+        try {
+            return Long.valueOf(jwtTokenProvider.parseClaims(token).getSubject());
+        } catch (Exception e) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private String buildAuthorizeUrl() {
+        if (kakaoOAuthProperties.getAuthorizeUri() == null
+                || kakaoOAuthProperties.getClientId() == null
+                || kakaoOAuthProperties.getRedirectUri() == null) {
+            throw new BaseException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+
+        return UriComponentsBuilder
+                .fromUriString(kakaoOAuthProperties.getAuthorizeUri())
+                .queryParam("client_id", kakaoOAuthProperties.getClientId())
+                .queryParam("redirect_uri", kakaoOAuthProperties.getRedirectUri())
+                .queryParam("response_type", "code")
+                .build()
+                .toUriString();
     }
 }

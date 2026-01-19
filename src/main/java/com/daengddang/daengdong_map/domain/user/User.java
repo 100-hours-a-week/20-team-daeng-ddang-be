@@ -33,14 +33,14 @@ public class User extends BaseTimeEntity {
     @Column(name = "status", nullable = false, length = 10)
     private UserStatus status = UserStatus.ACTIVE;
 
-    @Column(name = "last_login_at", nullable = false)
+    @Column(name = "last_login_at", nullable = true)
     private LocalDateTime lastLoginAt = LocalDateTime.now();
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "region_id", nullable = false)
+    @JoinColumn(name = "region_id", nullable = true)
     private Region region;
 
     @Builder
@@ -50,7 +50,7 @@ public class User extends BaseTimeEntity {
                  Region region) {
         this.kakaoUserId = kakaoUserId;
         this.status = status;
-        this.lastLoginAt = lastLoginAt;
+        this.lastLoginAt = LocalDateTime.now();
         this.region = region;
     }
 
