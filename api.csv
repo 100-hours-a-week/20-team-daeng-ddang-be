@@ -1,0 +1,2890 @@
+요청,,,,,응답,
+,Request method,url,body,설명,Response ststus code,message
+로그인 요청(카카오 OAuth 요청),GET,"/api/v3/auth
+",,"Request Header
+HTTP/1.1 303 See Other
+Location: https://kauth.kakao.com/oauth/authorize?client_id=...&redirect_uri=...&response_type=code
+
+리다이렉트 될 수 있도록",302,
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+로그인(카카오 로그인),POST,/api/v3/auth/login,"{
+    ""code"" : ""kakao authorization code""
+}","필수
+code : String",200,"{
+  ""message"": ""로그인에 성공했습니다."",
+  ""data"": {
+    ""accessToken"": ""jwt access token"",
+    ""isNewUser"": true,
+    ""user"": {
+      ""userId"": 1
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""인증 코드 형식이 올바르지 않거나 존재하지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""AUTHORIZATION_CODE_INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""인증 코드가 만료됐습니다. 다시 로그인 해주세요"",
+  ""data"": null,
+  ""errorCode"": ""AUTHORIZATION_CODE_EXPIRED""
+}"
+,,,,,401,"{
+  ""message"": ""유효하지 않은 인증 코드입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_AUTHORIZATION_CODE""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""로그인 서버와 통신에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""LOGIN_SERVER_COMMUNICATION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+토큰 연장,POST,/api/v3/auth/token,,Cookie에 저장된 Refresh Token을 통한 토큰 연장,200,"{
+  ""message"": ""토큰이 갱신되었습니다."",
+  ""data"": {
+    ""accessToken"": ""new jwt access token""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""유효하지 않은 리프레시 토큰입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_REFRESH_TOKEN""
+}"
+,,,,,401,"{
+  ""message"": ""만료된 리프레시 토큰 입니다."",
+  ""data"": null,
+  ""errorCode"": ""REFRESH_TOKEN_EXPIRED""
+}"
+,,,,,401,"{
+  ""message"": ""리프레시 토큰이 일치하지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""REFRESH_TOKEN_MISMATCH""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+로그아웃,POST,/api/v3/auth/logout,,"Request Header: 
+Authorization: Beaer {ACCESS_TOKEN}",204,
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+강아지 정보 등록,POST,/api/v3/dogs,"{
+  ""name"": ""만보"",
+  ""breedId"": 2,
+  ""birthDate"": ""2023-12-22"",
+  ""regionId"" : 23,
+  ""gender"": ""MALE"",
+  ""isNeutered"": true,
+  ""weight"" : 7.5,
+  ""profileImageUrl"": ""https://cdn.example.com/dogs/choco.png"",
+}","필수
+name : String
+breedId: Long
+birthDate : Date
+regionId : Long
+weight : Float
+선택
+profileImageUrl: String
+gender: Enum
+isNeutered: Boolean",201,"{
+  ""message"": ""강아지 정보 등록에 성공했습니다."",
+  ""data"": {
+        ""dogId"" : 1,
+        ""dogKey"": ""UUID KEY""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""이름을 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""NAME_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""이름은 2자 이상 15자 이하이며, 한글또는 영어로만 작성가능합니다."",
+  ""data"": null,
+  ""errorCode"": ""NAME_RULE_VIOLATION""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 종을 선택해주세요"",
+  ""data"": null,
+  ""errorCode"": ""DOG_BREED_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""존재하지 않는 강아지 종입니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_BREED_NOT_FOUND""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 생년월일을 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""DOG_BIRTHDATE_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 몸무게를 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""DOG_WEIGHT_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 몸무게는 소수점 첫째자리 까지만 입력 가능합니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_WEIGHT_DECIMAL_LIMIT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 페이지입니다"",
+  ""data"": null,
+  ""errorCode"": ""PAGE_NOT_FOUND""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+강아지 종 목록 조회,GET,/api/v3/dogs/breeds?keyword=,,"keyword : String (optional)
+- 미전달 시: 전체 종 목록 조회
+- 전달 시: 종 이름 기준 부분 검색 (1자 이상)",200,"{
+  ""message"": ""강아지 종 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""breeds"": [
+      {
+        ""breedId"": 1,
+        ""name"": ""말티즈""
+      },
+      {
+        ""breedId"": 2,
+        ""name"": ""말티푸""
+      }
+    ]
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""검색어는 1자 이상 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""SEARCH_KEYWORD_TOO_SHORT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다"",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+지역 목록 조회,GET,/api/v3/dogs/regions?parentId=,,"parentId : Long
+
+- parenId 미전달 -
+최상위 지역(시/도) 목록 조회
+parent_id IS NULL AND status = ACTIVE
+
+- parenId 전달 -
+해당 상위 지역에 속한 하위 지역 목록 조회
+ parent_id = parentRegionId AND status = ACTIVE
+
+404 -> 존재하지 않는 리소스 : 하위 지역이 존재하지 않는 지역 Id를 입력하는 경우 ",200(Query Parameter X),"{
+  ""message"": ""지역 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""regions"": [
+      {
+        ""regionId"": 1,
+        ""name"": ""서울특별시"",
+        ""level"": ""CITY""
+      },
+      {
+        ""regionId"": 2,
+        ""name"": ""부산광역시"",
+        ""level"": ""CITY""
+      }
+    ]
+  },
+  ""errorCode"" : null
+}
+"
+,,,,,200(Query Parameter O),"{
+  ""message"": ""지역 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""regions"": [
+      {
+        ""regionId"": 21,
+        ""name"": ""송파구"",
+        ""level"": ""DISTRICT"",
+        ""parentRegionId"": 1
+      },
+      {
+        ""regionId"": 22,
+        ""name"": ""강남구"",
+        ""level"": ""DISTRICT"",
+        ""parentRegionId"": 1
+      }
+    ]
+  },
+  ""errorCode"" : null
+}
+"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지(메인) 정보 조회,GET,/api/v3/users,,,200,"{
+  ""message"": ""마이페이지 요약 조회에 성공했습니다."",
+  ""data"": {
+     ""dogId"": 1,
+     ""name"": ""만보""
+     ""point"": 53,
+    ""totalWalkCount"": 16,
+    ""totalWalkDistanceKm"": 23.7,
+    ""recentAchievements"": [
+      {
+        ""achievementId"": 5,
+        ""name"": ""시작이 반"",
+        ""description"": ""반려견과 첫 산책을 시작했습니다. "",
+        ""achievedAt"": ""2026-01-02T10:23:11""
+      },
+      {
+        ""achievementId"": 3,
+        ""name"": ""산책왕"",
+        ""description"": ""산책을 누적 10KM 했습니다."",
+        ""achievedAt"": ""2026-01-01T18:40:02""
+      },
+      {
+        ""achievementId"": 1,
+        ""name"": ""반가워요"",
+        ""description"": ""회원가입을 했습니다."",
+        ""achievedAt"": ""2025-12-30T09:12:55""
+      }
+    ]
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 사용자 정보 조회,GET,/api/v3/users/,,,200,"{
+  ""message"": ""사용자 정보 조회에 성공했습니다."",
+  ""data"": {
+        ""userId"" : 1,
+        ""kakaoUserId"" : 1,
+        ""kakaoAccountEmail"" : ""test@test.com""
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 사용자 탈퇴,DELETE,/api/v3/users,,,204,
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 강아지 정보 조회,GET,/api/v3/users/dogs,,,200,"{
+  ""message"": ""강아지 정보 조회에 성공했습니다."",
+  ""data"": {
+        ""dogId"" : 1,
+        ""name"" : ""만보"",
+        ""breed"" : ""진돗개"",
+        ""birthDate"" : ""2023-12-23"",
+        ""weight"" : 20.2,
+        ""gender"" : ""수컷"",
+        ""isNeutered"" : true,
+        ""region"" : ""경기도 군포시"",
+        ""profileImageUrl"": ""https://cdn.example.com/dogs/choco.png""
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 강아지 정보 수정,PATCH,/api/v3/users/dogs,"{
+  ""name"": ""만보"",
+  ""breedId"": 2,
+  ""birthDate"": ""2023-12-22"",
+  ""regionId"" : 23,
+  ""gender"": ""MALE"",
+  ""isNeutered"": true,
+  ""weight"" : 7.5,
+  ""profileImageUrl"": ""https://cdn.example.com/dogs/choco.png"",
+}",,200,"{
+  ""message"": ""강아지 정보 수정에 성공했습니다."",
+  ""data"": {
+        ""dogId"" : 1,
+        ""name"" : ""만보"",
+        ""breed"" : ""진돗개"",
+        ""birthDate"" : ""2023-12-23"",
+        ""weight"" : 20.2,
+        ""gender"" : ""수컷"",
+        ""isNeutered"" : true,
+        ""region"" : ""경기도 군포시"",
+        ""profileImageUrl"": ""https://cdn.example.com/dogs/choco.png""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""이름을 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""NAME_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""이름은 2자 이상 15자 이하이며, 한글또는 영어로만 작성가능합니다."",
+  ""data"": null,
+  ""errorCode"": ""NAME_RULE_VIOLATION""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 종을 선택해주세요"",
+  ""data"": null,
+  ""errorCode"": ""DOG_BREED_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""존재하지 않는 강아지 종입니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_BREED_NOT_FOUND""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 생년월일을 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""DOG_BIRTHDATE_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 몸무게를 입력해주세요."",
+  ""data"": null,
+  ""errorCode"": ""DOG_WEIGHT_REQUIRED""
+}"
+,,,,,400,"{
+  ""message"": ""강아지 몸무게는 소수점 첫째자리 까지만 입력 가능합니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_WEIGHT_DECIMAL_LIMIT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 강아지 등록 삭제,DELETE,/api/v3/users/dogs,,,204,
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+마이페이지 사용자 업적 조회,GET,/api/v3/users/achievements,,정렬 기준은 업적 최근 획득 순으로 정렬,200,"{
+  ""message"": ""사용자 업적 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""achievements"": [
+      {
+        ""achievementId"": 5,
+        ""name"": ""시작이 반"",
+        ""description"": ""반려견과 첫 산책을 시작했습니다."",
+        ""category"": ""WALK"",
+        ""iconUrl"": ""https://cdn.example.com/achievements/start.png"",
+        ""achievedAt"": ""2026-01-02T10:23:11""
+      },
+      {
+        ""achievementId"": 3,
+        ""name"": ""산책왕"",
+        ""description"": ""산책 누적 거리 10km를 달성했습니다."",
+        ""category"": ""DISTANCE"",
+        ""iconUrl"": ""https://cdn.example.com/achievements/walk_king.png"",
+        ""achievedAt"": ""2026-01-01T18:40:02""
+      }
+    ],
+    ""pageInfo"": {
+      ""page"": 0,
+      ""size"": 10,
+      ""totalElements"": 27,
+      ""totalPages"": 3,
+      ""hasNext"": true
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+리캡 목록 조회,GET,/api/v3/recaps,,,200,"{
+  ""message"": ""리캡 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""recaps"": [
+      {
+        ""recapId"": 12,
+        ""periodType"": ""MONTH"",
+        ""periodValue"": ""2025-12"",
+        ""title"": ""12월, 만보와 함께한 따뜻한 산책"",
+        ""createdAt"": ""2026-01-01T00:05:12""
+      }
+    ],
+    ""pageInfo"": {
+      ""page"": 0,
+      ""size"": 10,
+      ""totalElements"": 5,
+      ""totalPages"": 1
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+리캡 조회,GET,/api/v3/recaps/{recapId},,recapId: Long,200,"{
+  ""message"": ""리캡 상세 조회에 성공했습니다."",
+  ""data"": {
+    ""recapId"": 12,
+    ""periodType"": ""MONTH"",
+    ""periodValue"": ""2025-12"",
+    ""title"": ""12월, 만보와 함께한 따뜻한 산책"",
+    ""content"": ""이번 달 만보는 총 18km를 산책했어요..."",
+    ""images"": [
+      {
+        ""imageUrl"": ""https://presigned-url...""
+      }
+    ],
+    ""createdAt"": ""2026-01-01T00:05:12""
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+개인 랭킹 조회(진입 페이지),GET,"/api/v3/rankings/dogs/summary
+    ?periodType=
+    &periodValue=
+    &regionId=",,"랭킹 페이지 진입시 초기 화면에 나오는 페이지
+초기 화면에는 상위 랭킹 목록 + 자신의 랭킹 + 근처 랭킹이 출력됨
+
+Query Parameter
+periodType : String
+periodValue : String
+regionId : Long",200,"{
+  ""message"": ""개인 랭킹 요약 조회에 성공했습니다."",
+  ""data"": {
+    ""topRanks"": [
+      {
+        ""rank"": 1,
+        ""dogId"": 12,
+        ""dogName"": ""초코"",
+        ""profileImageUrl"": ""https://cdn.example.com/sadads.png"",
+        ""distanceKm"": 42.3
+      },
+      {
+        ""rank"": 2,
+        ""dogId"": 8,
+        ""dogName"": ""보리"",
+        ""distanceKm"": 38.1
+      }
+    ],
+    ""myRank"": {
+      ""rank"": 17,
+      ""dogId"": 3,
+      ""dogName"": ""만보"",
+      ""profileImageUrl"": ""https://cdn.example.com/sadads.png"",
+      ""distanceKm"": 23.7
+    },
+    ""nearbyRanks"": {
+      ""above"": {
+        ""rank"": 16,
+        ""dogId"": 7,
+        ""dogName"": ""콩이"",
+        ""profileImageUrl"": ""https://cdn.example.com/sadads.png"",
+        ""distanceKm"": 24.1
+      },
+      ""below"": {
+        ""rank"": 18,
+        ""dogId"": 22,
+        ""dogName"": ""루루"",
+        ""profileImageUrl"": ""https://cdn.example.com/sadads.png"",
+        ""distanceKm"": 22.9
+      }
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+개인 랭킹 전체 조회(랭킹 스크롤용),GET,"/api/v3/rankings/dogs
+?periodType=
+&periodValue=
+&regionId=
+&cursor=
+&limit=",,"랭킹 페이지에서 스크롤링해 전체 랭킹을 볼 수 있는 페이지
+
+Query Parameter
+periodType : String
+periodValue : String
+regionId : Long
+cursor : String
+limit : Int",200,"{
+  ""message"": ""개인 랭킹 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""ranks"": [
+      {
+        ""rank"": 23,
+        ""dogId"": 17,
+        ""dogName"": ""콩이"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog17.png"",
+        ""distanceKm"": 18.1
+      },
+      {
+        ""rank"": 24,
+        ""dogId"": 4,
+        ""dogName"": ""보리"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog4.png"",
+        ""distanceKm"": 17.8
+      }
+    ],
+    ""nextCursor"": ""distance:17.8,dogId:4"",
+    ""hasNext"": true
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+지역 랭킹 조회(진입 페이지),GET,"/api/v3/rankings/regions/summary
+?periodType=
+&periodValue=
+&regionId=",,"랭킹 페이지 진입시 초기 화면에 나오는 페이지
+초기 화면에는 상위 랭킹 목록 + 자신의 랭킹 + 근처 랭킹이 출력됨
+
+Query Parameter
+periodType : String
+periodValue : String
+regionId : Long",200,"{
+  ""message"": ""지역 랭킹 요약 조회에 성공했습니다."",
+  ""data"": {
+    ""topRanks"": [
+      {
+        ""rank"": 1,
+        ""regionId"": 12,
+        ""regionName"": ""경기도 성남시"",
+        ""totalDistanceKm"": 412.3
+      },
+      {
+        ""rank"": 2,
+        ""regionId"": 8,
+        ""regionName"": ""서울시 송파구"",
+        ""totalDistanceKm"": 398.1
+      }
+    ],
+    ""myRank"": {
+      ""rank"": 7,
+      ""regionId"": 23,
+      ""regionName"": ""경기도 군포시"",
+      ""totalDistanceKm"": 287.4
+    },
+    ""nearbyRanks"": {
+      ""above"": {
+        ""rank"": 6,
+        ""regionId"": 19,
+        ""regionName"": ""서울시 강동구"",
+        ""totalDistanceKm"": 290.2
+      },
+      ""below"": {
+        ""rank"": 8,
+        ""regionId"": 31,
+        ""regionName"": ""경기도 안양시"",
+        ""totalDistanceKm"": 280.6
+      }
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+지역 랭킹(전체 랭킹 스크롤용),GET,"/api/v3/rankings/regions
+?periodType=
+&periodValue=
+&cursor=
+&limit=",,"랭킹 페이지에서 스크롤링해 전체 랭킹을 볼 수 있는 페이지
+
+Query Parameter
+periodType : String
+periodValue : String
+cursor : String
+limit : Int",200,"{
+  ""message"": ""지역 랭킹 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""ranks"": [
+      {
+        ""rank"": 3,
+        ""regionId"": 5,
+        ""regionName"": ""부산시 해운대구"",
+        ""totalDistanceKm"": 376.4
+      },
+      {
+        ""rank"": 4,
+        ""regionId"": 3,
+        ""regionName"": ""대전시 서구"",
+        ""totalDistanceKm"": 362.8
+      }
+    ],
+    ""nextCursor"": ""distance:362.8,regionId:3"",
+    ""hasNext"": true
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+지역 기여도 랭킹(진입 페이지),GET,"/api/v3/rankings/regions/contributions
+/summary
+?periodType=
+&periodValue=
+&regionId=",,"랭킹 페이지 진입시 초기 화면에 나오는 페이지
+초기 화면에는 상위 랭킹 목록 + 자신의 랭킹 + 근처 랭킹이 출력됨
+
+Query Parameter
+periodType : String
+periodValue : String
+regionId : Long",,"{
+  ""message"": ""지역 기여도 랭킹 요약 조회에 성공했습니다."",
+  ""data"": {
+    ""topRanks"": [
+      {
+        ""rank"": 1,
+        ""dogId"": 12,
+        ""dogName"": ""초코"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog1.png"",
+        ""dogDistanceKm"": 32.5,
+        ""contributionRate"": 0.18
+      },
+      {
+        ""rank"": 2,
+        ""dogId"": 8,
+        ""dogName"": ""보리"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog2.png"",
+        ""dogDistanceKm"": 28.1,
+        ""contributionRate"": 0.15
+      }
+    ],
+    ""myRank"": {
+      ""rank"": 7,
+      ""dogId"": 3,
+      ""dogName"": ""만보"",
+      ""profileImageUrl"": ""https://cdn.example.com/mydog.png"",
+      ""dogDistanceKm"": 14.2,
+      ""contributionRate"": 0.08
+    },
+    ""nearbyRanks"": {
+      ""above"": {
+        ""rank"": 6,
+        ""dogId"": 19,
+        ""dogName"": ""콩이"",
+        ""dogDistanceKm"": 15.0,
+        ""contributionRate"": 0.085
+      },
+      ""below"": {
+        ""rank"": 8,
+        ""dogId"": 21,
+        ""dogName"": ""루루"",
+        ""dogDistanceKm"": 13.9,
+        ""contributionRate"": 0.078
+      }
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+지역 기여도 랭킹 전체 조회(스크롤용),GET,"/api/v3/rankings/regions/contributions
+?periodType=
+&periodValue=
+&regionId=
+&cursor=
+&limit=",,"랭킹 페이지에서 스크롤링해 전체 랭킹을 볼 수 있는 페이지
+
+Query Parameter
+periodType : String
+periodValue : String
+regionId : Long
+cursor : String
+limit : Int",200,"{
+  ""message"": ""지역 기여도 랭킹 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""ranks"": [
+      {
+        ""rank"": 3,
+        ""dogId"": 5,
+        ""dogName"": ""루비"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog5.png"",
+        ""dogDistanceKm"": 26.7,
+        ""contributionRate"": 0.13
+      },
+      {
+        ""rank"": 4,
+        ""dogId"": 21,
+        ""dogName"": ""모카"",
+        ""profileImageUrl"": ""https://cdn.example.com/dog21.png"",
+        ""dogDistanceKm"": 25.9,
+        ""contributionRate"": 0.12
+      }
+    ],
+    ""nextCursor"": ""rate:0.12,dogId:21"",
+    ""hasNext"": true
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 기간 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_PERIOD_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 지역입니다."",
+  ""data"": null,
+  ""errorCode"": ""REGION_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+S3 파일 업로드 presigned-url 생성,POST,/api/v3/presigned-url,"{
+  ""fileType"": ""IMAGE"",
+  ""contentType"": ""image/jpeg"",
+  ""uploadContext"": ""WALK"",
+}","필수:
+fileType : Enum
+contentType : String
+uploadContext : ENUM",201,"{
+  ""message"": ""Presigned URL 발급에 성공했습니다."",
+  ""data"": {
+    ""presignedUrl"": ""https://s3.ap-northeast-2.amazonaws.com/..."",
+    ""objectKey"": ""walk/2026/01/09/uuid_1234.jpg"",
+    ""expiresIn"": 300
+  },
+  ""errorCode"" : null
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+강아지 표정 분석(동기),POST,/api/v3/walks/{walkId}/expressions,"{
+  ""videoUrl"": ""https://cdn.example.com/videos/dog_walk.mp4""
+}","필수
+videoUrl : String
+
+첫 분석 → 생성
+재촬영 → 업데이트
+
+",201,"{
+  ""message"": ""표정 분석 결과 생성에 성공했습니다."",
+  ""data"": {
+    ""expressionId"": 12,
+    ""predictEmotion"": ""HAPPY"",
+    ""emotionScores"": {
+      ""happy"": 0.82,
+      ""relaxed"": 0.10,
+      ""sad"": 0.05,
+      ""angry"": 0.03
+    },
+    ""summary"": ""산책 후 반려견이 전반적으로 편안하고 즐거운 상태로 보입니다."",
+    ""imageUrl"": ""https://cdn.example.com/expressions/expr_12.jpg"",
+    ""createdAt"": ""2026-01-08T16:40:13"",
+    ""dogId"": 3,
+    ""walkId"": 27
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""파일 URL이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FILE_URL""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,400,"{
+  ""message"": ""영상 길이가 제한을 초과했습니다."",
+  ""data"": null,
+  ""errorCode"": ""VIDEO_LENGTH_EXCEEDED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 산책 기록입니다."",
+  ""data"": null,
+  ""errorCode"": ""WALK_RECORD_NOT_FOUND""
+}"
+,,,,,422,"{
+  ""message"": ""영상에서 강아지 얼굴을 인식할 수 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_FACE_NOT_RECOGNIZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+표정 분석 요청(비동기 job 생성),POST,"/api/v3/walks/{walkId}/expressions/jobs
+","{
+  ""videoUrl"": ""https://cdn.example.com/videos/dog_walk.mp4""
+}","필수
+videoUrl : String
+
+첫 분석 → 생성
+재촬영 → 업데이트
+
+API가 “항상 새로 생성”은 아님 -> 200으로..?",202,"{
+  ""message"": ""표정 분석 작업이 요청되었습니다."",
+  ""data"": {
+    ""jobId"": ""expr_job_20260109_001"",
+    ""walkId"": 27,
+    ""status"": ""QUEUED"",
+    ""submittedAt"": ""2026-01-09T10:15:03""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""파일 URL이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FILE_URL""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 산책 기록입니다."",
+  ""data"": null,
+  ""errorCode"": ""WALK_RECORD_NOT_FOUND""
+}"
+,,,,,409,"{
+  ""message"": ""이미 표정 분석이 진행 중이거나 완료된 산책입니다."",
+  ""data"": null,
+  ""errorCode"": ""EMOTION_ANALYSIS_ALREADY_RUNNING""
+}"
+,,,,,422,"{
+  ""message"": ""영상에서 강아지 얼굴을 인식할 수 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_FACE_NOT_RECOGNIZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+표정 분석 Job 상태 조회(polling),GET,"/api/v3/walks/{walkId}/expressions
+/jobs/{jobId}",,"비동기로 처리시 표정 분석을 다시 확인 할 수 있는 페이지는 따로 없음 
+-> 산책일지를 통해 비동기 결과를 확인해야 함",200(처리중),"{
+  ""message"": ""표정 분석이 진행 중입니다."",
+  ""data"": {
+    ""jobId"": ""expr_job_20260109_001"",
+    ""status"": ""PROCESSING"",
+    ""progress"": 65
+  },
+  ""errorCode"" : null
+}"
+,,,,,200(처리 완료),"{
+  ""message"": ""표정 분석이 저장되었습니다."",
+  ""data"": {
+    ""jobId"": ""expr_job_20260109_001"",
+    ""status"": ""SUCCEEDED"",
+    ""expressionId"": 12,
+    ""completedAt"": ""2026-01-09T10:15:42""
+  },
+  ""errorCode"" : null
+}"
+,,,,,200(분석 실패),"{
+  ""message"": ""표정 분석에 실패했습니다."",
+  ""data"": {
+    ""jobId"": ""expr_job_20260109_001"",
+    ""status"": ""FAILED"",
+    ""errorCode"": ""FACE_NOT_DETECTED"",
+    ""errorMessage"": ""영상에서 강아지 얼굴을 인식할 수 없습니다.""
+  },
+  ""errorCode"" : null
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 산책 기록입니다."",
+  ""data"": null,
+  ""errorCode"": ""WALK_RECORD_NOT_FOUND""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+"발자국 페이지
+산책일지 조회(산책일지 - 산책 정보 조회)",GET,"/api/v3/footprints/diaries/{walkDiaryId}
+",,"Path Variable
+walkDiaryId : Long",200,"{
+  ""message"": ""산책일지 조회에 성공했습니다."",
+  ""data"": {
+    ""walkDiaryId"": 10,
+    ""walkDate"": ""2025-12-23"",
+    ""distanceKm"": 2.23,
+    ""duration"": ""01:05"",
+    ""region"": ""경기도 성남시 판교"",
+    ""memo"": ""오늘은 산책을 재밌게..."",
+    
+    ""pathImageUrl"": ""https://cdn.example.com/walks/27/path.png"",
+
+    ""expressionId"": 12
+  },
+  ""errorCode"" : null
+}
+"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"발자국 페이지
+산책일지 조회(산책일지 - 표정분석 결과 조회)",GET,/api/v3/footprints/diaries/{walkDiaryId}/expressions,,"Path Variable
+walkDiaryId : Long",200,"{
+  ""message"": ""표정 분석 결과 조회에 성공했습니다."",
+  ""data"": {
+    ""expressionId"": 12,
+    ""predictEmotion"": ""HAPPY"",
+    ""emotionScores"": {
+      ""happy"": 0.82,
+      ""relaxed"": 0.10,
+      ""sad"": 0.05,
+      ""angry"": 0.03
+    },
+    ""summary"": ""산책 후 반려견이 전반적으로 편안하고 즐거운 상태로 보입니다."",
+    ""imageUrl"": ""https://cdn.example.com/expressions/expr_12.jpg"",
+    ""createdAt"": ""2026-01-08T16:40:13""
+  },
+  ""errorCode"" : null
+}"
+,,,,,200(비동기 처리시),"{
+  ""message"": ""표정 분석 결과가 존재하지 않습니다."",
+  ""data"": null,
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"발자국 페이지
+산책일지 조회(산책일지 - 산책 이미지 조회)",GET,/api/v3/footprints/diaries/{walkDiaryId}/images,,"Path Variable
+walkDiaryId : Long",200,"{
+  ""message"": ""산책 이미지 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""images"": [
+      {
+        ""imageId"": 101,
+        ""imageUrl"": ""https://cdn.example.com/walks/27/img_01.jpg"",
+        ""createdAt"": ""2025-12-23T15:12:33""
+      },
+      {
+        ""imageId"": 102,
+        ""imageUrl"": ""https://cdn.example.com/walks/27/img_02.jpg"",
+        ""createdAt"": ""2025-12-23T15:20:11""
+      }
+    ]
+  }
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"발자국 페이지 
+산책일지 및 헬스케어 전체조회(캘린더)",GET,"/api/v3/footprints
+?year=
+&month=",,"Query Parameter
+year : Long
+month : Long",200,"{
+  ""message"": ""캘린더 기록 조회에 성공했습니다."",
+  ""data"": {
+    ""year"": 2025,
+    ""month"": 12,
+    ""days"": [
+      {
+        ""date"": ""2025-12-03"",
+        ""hasWalkDiary"": true,
+        ""hasHealthCare"": false
+      },
+      {
+        ""date"": ""2025-12-07"",
+        ""hasWalkDiary"": true,
+        ""hasHealthCare"": true
+      },
+      {
+        ""date"": ""2025-12-12"",
+        ""hasWalkDiary"": false,
+        ""hasHealthCare"": true
+      }
+    ]
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 날짜 요청입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_DATE_REQUEST""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"발자국 페이지
+산책일지 및 헬스케어 목록 조회
+(요일별 조회)",GET,/api/v3/footprints/dates/{date},,"Path Variable
+date : String",200,"{
+  ""message"": ""일별 기록 목록 조회에 성공했습니다."",
+  ""data"": {
+    ""date"": ""2025-12-07"",
+    ""records"": [
+      {
+        ""type"": ""WALK"",
+        ""id"": 27,
+        ""title"": ""2025/12/07 산책일지""
+      },
+      {
+        ""type"": ""HEALTH"",
+        ""id"": 14,
+        ""title"": ""2025/12/07 헬스케어""
+      }
+    ]
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 요청 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"발자국 페이지
+헬스케어 결과 상세 조회",GET,/api/v3/footprints/healthcares/{healthcareId},,"Path Variable
+healthcareId : Long",200,"{
+  ""message"": ""헬스케어 분석 결과 조회에 성공했습니다."",
+  ""data"": {
+    ""healthcareId"": 18,
+    ""analyzedAt"": ""2026-01-09T11:21:12"",
+
+    ""overallRiskLevel"": ""LOW"",
+    ""summary"": ""보행 패턴이 안정적이며 슬개골 이상 징후는 낮은 수준입니다."",
+
+    ""metrics"": {
+      ""patellaRisk"": {
+        ""level"": ""LOW"",
+        ""score"": 12,
+        ""description"": ""슬개골 탈구 위험 신호가 거의 감지되지 않았습니다.""
+      },
+      ""gaitBalance"": {
+        ""score"": 88,
+        ""description"": ""좌우 균형이 안정적으로 유지되고 있습니다.""
+      },
+      ""kneeMobility"": {
+        ""score"": 91,
+        ""description"": ""무릎 관절 가동 범위가 정상 범위입니다.""
+      },
+      ""gaitStability"": {
+        ""score"": 85,
+        ""description"": ""보행 중 흔들림이 거의 없습니다.""
+      },
+      ""gaitRhythm"": {
+        ""score"": 90,
+        ""description"": ""보행 리듬이 일정하게 유지됩니다.""
+      }
+    },
+
+    ""artifacts"": {
+      ""reportImageUrl"": ""https://cdn.example.com/healthcare/reports/health_18.png"",
+      ""overlayVideoUrl"": ""https://cdn.example.com/healthcare/videos/health_18_overlay.mp4""
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"헬스케어 요청
+(동기)",POST,/api/v3/healthcares,"{
+  ""videoUrl"": ""https://cdn.example.com/videos/dog_gait.mp4""
+}","필수 videoUrl : 
+String",201,"{
+  ""message"": ""헬스케어 분석 결과 조회에 성공했습니다."",
+  ""data"": {
+    ""overallRiskLevel"": ""MEDIUM"",
+    ""summary"": ""산책 시 오른쪽 다리의 사용이 불균형하며 슬개골 부담 신호가 감지되었습니다."",
+
+    ""metrics"": {
+      ""patellaRisk"": {
+        ""level"": ""WARNING"",
+        ""score"": 72,
+        ""description"": ""오른쪽 뒷다리의 사용 빈도가 낮아 슬개골 부담이 의심됩니다.""
+      },
+      ""gaitBalance"": {
+        ""score"": 68,
+        ""description"": ""좌우 보행 균형이 다소 불안정합니다.""
+      },
+      ""kneeMobility"": {
+        ""score"": 75,
+        ""description"": ""관절 가동 범위는 정상 범위 내에 있습니다.""
+      },
+      ""gaitStability"": {
+        ""score"": 70,
+        ""description"": ""보행 중 체중 이동이 일정하지 않습니다.""
+      },
+      ""gaitRhythm"": {
+        ""score"": 80,
+        ""description"": ""보행 리듬은 비교적 안정적입니다.""
+      }
+    },
+
+    ""resultImages"": {
+      ""reportImageUrl"": ""https://cdn.example.com/health/report_27.png"",
+      ""overlayVideoUrl"": ""https://cdn.example.com/health/overlay_27.mp4""
+    },
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""파일 URL이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FILE_UR""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,400,"{
+  ""message"": ""영상 길이가 제한을 초과했습니다."",
+  ""data"": null,
+  ""errorCode"": ""VIDEO_LENGTH_EXCEEDED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,422,"{
+  ""message"": ""영상에서 강아지 얼굴을 인식할 수 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_FACE_NOT_RECOGNIZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+헬스케어 요청(비동기 job 생성),POST,/api/v3/healthcares/jobs,"{
+  ""videoUrl"": ""https://cdn.example.com/videos/dog_gait.mp4""
+}","필수 videoUrl : 
+String",202,"{
+  ""message"": ""헬스케어 분석 작업이 요청되었습니다."",
+  ""data"": {
+    ""jobId"": ""health_job_20260109_001"",
+    ""status"": ""QUEUED"",
+    ""submittedAt"": ""2026-01-09T11:20:03""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""파일 URL이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FILE_UR""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,400,"{
+  ""message"": ""영상 길이가 제한을 초과했습니다."",
+  ""data"": null,
+  ""errorCode"": ""VIDEO_LENGTH_EXCEEDED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,422,"{
+  ""message"": ""영상에서 강아지 얼굴을 인식할 수 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""DOG_FACE_NOT_RECOGNIZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+헬스케어 분석 상태 조회(비동기),GET,/api/v3/healthcares/jobs/{jobId},,"Path Variable
+jobId : String",200(처리중),"{
+  ""message"": ""헬스케어 분석이 진행 중입니다."",
+  ""data"": {
+    ""jobId"": ""health_job_20260109_001"",
+    ""status"": ""PROCESSING"",
+    ""progress"": 60
+  },
+  ""errorCode"" : null
+}"
+,,,,,200(완료),"{
+  ""message"": ""헬스케어 분석이 완료되었습니다."",
+  ""data"": {
+    ""jobId"": ""health_job_20260109_001"",
+    ""status"": ""SUCCEEDED"",
+    ""healthcareId"": 18,
+    ""completedAt"": ""2026-01-09T11:21:12""
+  },
+  ""errorCode"" : null
+}"
+,,,,,200(분석 실패),"{
+  ""message"": ""헬스케어 분석에 실패했습니다."",
+  ""data"": {
+    ""jobId"": ""health_job_20260109_001"",
+    ""status"": ""FAILED"",
+    ""errorCode"": ""LOW_QUALITY_MEDIA"",
+    ""errorMessage"": ""영상 품질이 낮아 분석이 어렵습니다.""
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 분석 작업입니다."",
+  ""data"": null,
+  ""errorCode"": ""ANALYSIS_TASK_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+헬스케어 결과 상세 조회,GET,/api/v3/healthcares/{healthcareId},,healthcareId : Long,200,"{
+  ""message"": ""헬스케어 분석 결과 조회에 성공했습니다."",
+  ""data"": {
+    ""healthcareId"": 18,
+    ""analyzedAt"": ""2026-01-09T11:21:12"",
+
+    ""overallRiskLevel"": ""LOW"",
+    ""summary"": ""보행 패턴이 안정적이며 슬개골 이상 징후는 낮은 수준입니다."",
+
+    ""metrics"": {
+      ""patellaRisk"": {
+        ""level"": ""LOW"",
+        ""score"": 12,
+        ""description"": ""슬개골 탈구 위험 신호가 거의 감지되지 않았습니다.""
+      },
+      ""gaitBalance"": {
+        ""score"": 88,
+        ""description"": ""좌우 균형이 안정적으로 유지되고 있습니다.""
+      },
+      ""kneeMobility"": {
+        ""score"": 91,
+        ""description"": ""무릎 관절 가동 범위가 정상 범위입니다.""
+      },
+      ""gaitStability"": {
+        ""score"": 85,
+        ""description"": ""보행 중 흔들림이 거의 없습니다.""
+      },
+      ""gaitRhythm"": {
+        ""score"": 90,
+        ""description"": ""보행 리듬이 일정하게 유지됩니다.""
+      }
+    },
+
+    ""artifacts"": {
+      ""reportImageUrl"": ""https://cdn.example.com/healthcare/reports/health_18.png"",
+      ""overlayVideoUrl"": ""https://cdn.example.com/healthcare/videos/health_18_overlay.mp4""
+    }
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+수의사 상담 챗봇 - 채팅 세션 생성,POST,/api/v3/healthcares/chat/sessions,,,201,"{
+  ""message"": ""상담 세션이 생성되었습니다."",
+  ""data"": {
+    ""sessionId"": ""vet_sess_01HXYZABC"",
+    ""createdAt"": ""2026-01-09T14:10:00+09:00"",
+    ""expiresAt"": ""2026-01-09T14:40:00+09:00""
+  },
+  ""errorCode"" : null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+수의사 상담 챗봇 - 채팅 메세지 전송,POST,/api/v3/healthcares/chat,"{
+  ""sessionId"": ""vet_sess_20260109_001"",
+  ""message"": ""강아지가 귀를 계속 긁어요. 괜찮은 건가요?"",
+  ""imageUrl"": ""https://cdn.example.com/images/dog_ear.jpg""
+}","필수
+sessionId : String
+message : String
+선택
+imageUrl : String",201,"{
+  ""message"": ""상담 답변이 생성되었습니다."",
+  ""data"": {
+    ""answer"": ""귀를 계속 긁는 경우 알레르기나 외이도염 등 다양한 원인이 있을 수 있습니다..."",
+    ""disclaimer"": ""이 답변은 진단이 아닌 참고용 안내입니다."",
+    ""followups"": [
+      ""귀에서 냄새나 분비물이 있나요?"",
+      ""언제부터 증상이 시작됐나요?""
+    ],
+    ""answeredAt"": ""2026-01-09T14:21:10""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,400,"{
+  ""message"": ""파일 URL이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FILE_UR""
+}"
+,,,,,415,"{
+  ""message"": ""지원하지 않는 파일 타입입니다. "",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED ""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,409,"{
+  ""message"": ""종료된 세션입니다."",
+  ""data"": null,
+  ""errorCode"": ""SESSION_EXPIRED""
+}"
+,,,,,422,"{
+  ""message"": ""해당 채팅 이미지 및 텍스트를 분석할 수 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""CHAT_ANALYSIS_NOT_SUPPORTED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"산책일지 작성
+(산책 종료 후 작성)",POST,/api/v3/walks/{walkId}/diaries,"{
+  ""memo"": ""오늘은 컨디션이 좋아서 오래 걸었다.""
+}","Query Parameter
+walkId : Long
+필수
+memo : String",201,"{
+  ""message"": ""산책일지가 작성되었습니다."",
+  ""data"": {
+    ""walkDiaryId"": 10,
+    ""walkId"": 27,
+    ""createdAt"": ""2026-01-10T16:40:00+09:00""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,409,"{
+  ""message"": ""종료된 세션입니다."",
+  ""data"": null,
+  ""errorCode"": ""SESSION_EXPIRED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"산책 중 돌발 미션 기록 생성
+(동영상 업로드)",POST,"/api/v3/walks/{walkId}/missions
+","{
+  ""missionId"": 2,
+  ""missionVideoUrl"": ""https://cdn.example.com/missions/paw_01.mp4""
+}","Path Variable
+walkId : Long
+
+필수
+missionId : Long
+missionVideoUrl : String",201,"{
+  ""message"": ""돌발미션 기록이 저장되었습니다."",
+  ""data"": {
+    ""missionRecordId"": 101,
+    ""walkId"": 7,
+    ""missionId"": 2
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,415,"{
+  ""message"": ""지원되지 않는 동영상 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""FILE_TYPE_UNSUPPORTED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"산책 종료 후 돌발 미션 분석 요청
+(동기)",POST,/api/v3/walks/{walkId}/missions/analysis,"{
+  ""missionRecordIds"": [101, 102, 103]
+}","Path Variable
+walkId :Long
+필수
+missionRecordsId : List<Long>",201,"{
+  ""message"": ""돌발미션 분석이 완료되었습니다."",
+  ""data"": {
+    ""walkId"": 7,
+    ""analyzedAt"": ""2026-01-09T17:22:14+09:00"",
+    ""missions"": [
+      {
+        ""missionRecordId"": 101,
+        ""missionId"": 1,
+        ""title"": ""앉아"",
+        ""status"": ""SUCCESS"",
+        ""confidence"": 0.92,
+        ""message"": ""지시에 맞춰 안정적으로 앉는 동작을 수행했습니다.""
+      },
+      {
+        ""missionRecordId"": 102,
+        ""missionId"": 2,
+        ""title"": ""손"",
+        ""status"": ""FAIL"",
+        ""confidence"": 0.61,
+        ""message"": ""앞발을 들었으나 손 동작으로 보기에는 부족했습니다.""
+      }
+    ]
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,409,"{
+  ""message"": ""이미 돌발 미션이 분석이 완료된 영상입니다."",
+  ""data"": null,
+  ""errorCode"": ""MISSION_ALREADY_ANALYZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"산책 종료 후 돌발 미션 분석 요청
+(비동기)",POST,POST /api/v3/walks/{walkId}/missions/analysis/jobs,"{
+  ""missionRecordIds"": [101, 102, 103]
+}","Path Variable
+walkId :Long
+필수
+missionRecordsId : List<Long>",202,"{
+  ""message"": ""돌발미션 분석 요청이 접수되었습니다."",
+  ""data"": {
+    ""jobId"": ""mission_job_20260109_001"",
+    ""walkId"": 7,
+    ""status"": ""QUEUED"",
+    ""requestedAt"": ""2026-01-09T17:30:00+09:00""
+  },
+  ""errorCode"" : null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,409,"{
+  ""message"": ""이미 돌발 미션이 분석이 완료된 영상입니다."",
+  ""data"": null,
+  ""errorCode"": ""MISSION_ALREADY_ANALYZED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+"산책 종료 후 돌발 미션 분석 상태조회
+(비동기)",GET,/api/v3/walks/{walkId}/missions/analysis/jobs/{jobId},,"Path Variable
+walkId :Long
+jobId : String","200
+(처리중)","{
+  ""message"": ""돌발미션 분석이 진행 중입니다."",
+  ""data"": {
+    ""jobId"": ""mission_job_20260109_001"",
+    ""status"": ""PROCESSING"",
+    ""progress"": 66
+  },
+  ""errorCode"" : null
+}"
+,,,,,"200
+(완료)","{
+  ""message"": ""돌발미션 분석이 완료되었습니다."",
+  ""data"": {
+    ""jobId"": ""mission_job_20260109_001"",
+    ""status"": ""SUCCEEDED"",
+    ""completedAt"": ""2026-01-09T17:32:14+09:00""
+  },
+  ""errorCode"" : null
+}"
+,,,,,"200
+(실패)","{
+  ""message"": ""돌발미션 분석 중 오류가 발생했습니다."",
+  ""data"": {
+    ""jobId"": ""mission_job_20260109_001"",
+    ""status"": ""FAILED"",
+  },
+    ""errorCode"": ""MISSION_INFERENCE_FAILED""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+돌발  미션 결과 조회,GET,/api/v3/walks/{walkId}/missions/analysis,,"Path Variable
+walkId :Long
+jobId : String",200,"{
+  ""message"": ""돌발미션 분석 결과 조회에 성공했습니다."",
+  ""data"": {
+    ""walkId"": 7,
+    ""analyzedAt"": ""2026-01-09T17:32:14+09:00"",
+    ""missions"": [
+      {
+        ""missionRecordId"": 101,
+        ""missionId"": 1,
+        ""title"": ""앉아"",
+        ""status"": ""SUCCESS"",
+        ""confidence"": 0.92,
+        ""message"": ""지시에 맞춰 안정적으로 앉는 동작을 수행했습니다.""
+      },
+      {
+        ""missionRecordId"": 102,
+        ""missionId"": 2,
+        ""title"": ""손"",
+        ""status"": ""FAIL"",
+        ""confidence"": 0.61,
+        ""message"": ""앞발을 들었으나 손 동작으로 보기에는 부족했습니다.""
+      }
+    ]
+  },
+  ""errorCode"": null
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다."",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,502,"{
+  ""message"": ""AI 서버와 연결에 실패했습니다."",
+  ""data"": null,
+  ""errorCode"": ""AI_SERVER_CONNECTION_FAILED""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+산책하기 시작,POST,/api/v3/walks,"{
+  ""startLat"": 37.3941,
+  ""startLng"": 127.1113
+}","필수
+startLat : Double
+startLng : Double",201,"{
+  ""message"": ""산책이 시작되었습니다."",
+  ""data"": {
+    ""walkId"": 27,
+    ""startedAt"": ""2026-01-10T15:02:11+09:00""
+  },
+  ""errorCode"": null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+현재 점유 블록 조회,GET,/api/v3/walks/{walkId}/blocks,,,200,"{
+  ""message"": ""점유 블록 조회에 성공했습니다."",
+  ""data"": {
+    ""blocks"": [
+      {
+        ""blockId"": ""P_37.394_127.111"",
+        ""dogId"": 3,
+        ""occupiedAt"": ""2026-01-10T15:03:11+09:00""
+      }
+    ]
+  },
+  ""errorCode"": null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다"",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+산책 종료,POST,/api/v3/walks/{walkId},"{
+  ""endLat"": 37.39482,
+  ""endLng"": 127.11231,
+  ""totalDistanceKm"": 2.31,
+  ""durationSeconds"": 2580,
+  ""status"" : ""FINISHED""
+}","Path Variable
+walkId : Long
+
+endLat : Double
+endLng : Double
+totalDistanceKm : Double
+durationSeconds : Integer
+status : Enum",200,"{
+  ""message"": ""산책이 정상적으로 종료되었습니다."",
+  ""data"": {
+    ""walkId"": 27,
+    ""startedAt"": ""2026-01-10T15:02:11+09:00"",
+    ""endedAt"": ""2026-01-10T15:45:02+09:00"",
+    ""totalDistanceKm"": 2.31,
+    ""durationSeconds"": 2580,
+    ""occupiedBlockCount"": 48,
+    ""status"" : ""FINISHED""
+  },
+  ""errorCode"": null
+}"
+,,,,,400,"{
+  ""message"": ""산책 거리 또는 시간이 올바르지 않습니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_WALK_METRICS""
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,404,"{
+  ""message"": ""존재하지 않는 리소스입니다"",
+  ""data"": null,
+  ""errorCode"": ""RESOURCE_NOT_FOUND""
+}"
+,,,,,405,"{
+  ""message"": ""올바른 메서드 접근이 아닙니다."",
+  ""data"": null,
+  ""errorCode"": ""METHOD_NOT_ALLOWED""
+}"
+,,,,,409,"{
+  ""message"": ""이미 종료된 산책입니다."",
+  ""data"": null,
+  ""errorCode"": ""WALK_ALREADY_ENDED""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+주변 블록 상태 조회,GET,"/api/v3/blocks
+?lat=
+&lng=
+&radius=",,"Query Parameter
+lat : Double
+lng : Double
+radius : Integer",200,"{
+  ""message"": ""주변 블록 조회에 성공했습니다."",
+  ""data"": {
+    ""blocks"": [
+      {
+        ""blockId"": ""P_37.394_127.111"",
+        ""dogId"": 3,
+        ""occupiedAt"": ""2026-01-10T15:03:11+09:00""
+      }
+    ]
+  },
+  ""errorCode"": null
+}"
+,,,,,400,"{
+  ""message"": ""유효하지 않은 형식입니다."",
+  ""data"": null,
+  ""errorCode"": ""INVALID_FORMAT""
+}"
+,,,,,401,"{
+  ""message"": ""권한이 없는 사용자 입니다. 로그인 후 이용해주세요."",
+  ""data"": null,
+  ""errorCode"": ""UNAUTHORIZED""
+}"
+,,,,,403,"{
+  ""message"": ""접근 권한이 없습니다."",
+  ""data"": null,
+  ""errorCode"": ""FORBIDDEN""
+}"
+,,,,,500,"{
+  ""message"": ""내부 서버 오류"",
+  ""data"": null,
+  ""errorCode"": ""INTERNAL_SERVER_ERROR""
+}"
+,,,,,503,"{
+  ""message"": ""서버 점검중입니다."",
+  ""data"": null,
+  ""errorCode"": ""SERVICE_UNDER_MAINTENANCE""
+}"
+산책 중 사진 촬영,POST,/api/v3/walks/{walkId}/images,"{
+    ""walkImagesUrl"" : ""image url""
+}",,,

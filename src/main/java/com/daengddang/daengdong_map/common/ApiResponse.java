@@ -15,7 +15,6 @@ public class ApiResponse<T> {
         this.errorCode = errorCode;
     }
 
-    /* ===== 성공 응답 ===== */
 
     public static <T> ApiResponse<T> success(String message, T data) {
         return new ApiResponse<>(message, data, null);
@@ -24,8 +23,6 @@ public class ApiResponse<T> {
     public static ApiResponse<Void> success(String message) {
         return new ApiResponse<>(message, null, null);
     }
-
-    /* ===== 실패 응답 ===== */
 
     public static ApiResponse<Void> error(ErrorCode errorCode) {
         return new ApiResponse<>(
