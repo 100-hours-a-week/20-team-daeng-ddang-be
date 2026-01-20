@@ -1,5 +1,9 @@
 HELP.md
 .env
+websocket.csv
+api.csv
+breed.sql
+ddl.sql
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
