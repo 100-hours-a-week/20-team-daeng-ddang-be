@@ -4,6 +4,8 @@ websocket.csv
 api.csv
 breed.sql
 ddl.sql
+AGENTS.md
+docs
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar

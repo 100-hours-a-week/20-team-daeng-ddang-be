@@ -60,6 +60,7 @@ public enum ErrorCode {
     DOG_WEIGHT_REQUIRED(HttpStatus.BAD_REQUEST, "강아지 몸무게를 입력해주세요."),
     DOG_WEIGHT_DECIMAL_LIMIT(HttpStatus.BAD_REQUEST,
             "강아지 몸무게는 소수점 첫째자리까지만 입력 가능합니다."),
+    DOG_BREED_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 존재하는 강아지 종입니다."),
 
     /* =======================
      * 5.6 지역 / 조회
@@ -95,6 +96,7 @@ public enum ErrorCode {
      * ======================= */
     INVALID_WALK_METRICS(HttpStatus.BAD_REQUEST,
             "산책 거리 또는 시간이 올바르지 않습니다."),
+    WALK_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "이미 진행 중인 산책이 있습니다."),
     WALK_ALREADY_ENDED(HttpStatus.CONFLICT, "이미 종료된 산책입니다."),
     SESSION_EXPIRED(HttpStatus.CONFLICT, "종료된 세션입니다.");
 

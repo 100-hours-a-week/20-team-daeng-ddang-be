@@ -90,9 +90,6 @@ public class DogService {
         Breed breed = breedRepository.findById(request.getBreedId())
                 .orElseThrow(() -> new BaseException(ErrorCode.DOG_BREED_NOT_FOUND));
 
-        Region region = regionRepository.findByIdAndStatus(request.getRegionId(), RegionStatus.ACTIVE)
-                .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
-
         boolean isNeutered = request.getIsNeutered() != null && request.getIsNeutered();
 
         dog.updateProfile(
@@ -102,11 +99,8 @@ public class DogService {
                 isNeutered,
                 request.getWeight().floatValue(),
                 request.getProfileImageUrl(),
-                breed,
-                region
+                breed
         );
-
-        user.updateRegion(region);
 
         return DogResponse.from(dog);
     }

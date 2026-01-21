@@ -23,9 +23,6 @@ public class DogUpdateRequest {
 
     private LocalDate birthDate;
 
-    @NotNull
-    private Long regionId;
-
     private DogGender gender;
     private Boolean isNeutered;
 

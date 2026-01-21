@@ -34,7 +34,7 @@ public class User extends BaseTimeEntity {
     private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "last_login_at", nullable = true)
-    private LocalDateTime lastLoginAt = LocalDateTime.now();
+    private LocalDateTime lastLoginAt;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -50,7 +50,7 @@ public class User extends BaseTimeEntity {
                  Region region) {
         this.kakaoUserId = kakaoUserId;
         this.status = status;
-        this.lastLoginAt = LocalDateTime.now();
+        this.lastLoginAt = lastLoginAt;
         this.region = region;
     }
 

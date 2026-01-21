@@ -19,6 +19,7 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(List.of("*")); // allowCredentials(true)와 함께 사용
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setMaxAge(10 * 60L);
+        config.setAllowCredentials(true);
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
 

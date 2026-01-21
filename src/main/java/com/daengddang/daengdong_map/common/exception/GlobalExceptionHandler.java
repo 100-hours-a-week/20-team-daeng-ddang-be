@@ -2,6 +2,8 @@ package com.daengddang.daengdong_map.common.exception;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
 import com.daengddang.daengdong_map.common.ErrorCode;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -34,6 +36,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error(ErrorCode.METHOD_NOT_ALLOWED));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        ErrorCode errorCode = resolveConstraintViolation(e);
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.error(errorCode));
     }
 
     @ExceptionHandler(Exception.class)
@@ -78,6 +88,20 @@ public class GlobalExceptionHandler {
             }
         }
 
+        return ErrorCode.INVALID_FORMAT;
+    }
+
+    private ErrorCode resolveConstraintViolation(DataIntegrityViolationException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof ConstraintViolationException constraintViolation) {
+            String constraintName = constraintViolation.getConstraintName();
+            if ("uk_walks_in_progress_dog".equalsIgnoreCase(constraintName)) {
+                return ErrorCode.WALK_ALREADY_IN_PROGRESS;
+            }
+            if ("uk_breed_name".equalsIgnoreCase(constraintName)) {
+                return ErrorCode.DOG_BREED_NAME_DUPLICATED;
+            }
+        }
         return ErrorCode.INVALID_FORMAT;
     }
 }
