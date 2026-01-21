@@ -5,7 +5,6 @@ import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.region.Region;
 import com.daengddang.daengdong_map.domain.region.RegionStatus;
 import com.daengddang.daengdong_map.domain.user.User;
-import com.daengddang.daengdong_map.domain.user.UserStatus;
 import com.daengddang.daengdong_map.dto.request.user.UserRegisterRequest;
 import com.daengddang.daengdong_map.dto.request.user.UserUpdateRequest;
 import com.daengddang.daengdong_map.dto.response.user.UserInfoResponse;
@@ -31,9 +30,6 @@ public class UserService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
 
         Region region = regionRepository.findByIdAndStatus(request.getRegionId(), RegionStatus.ACTIVE)
                 .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
@@ -48,10 +44,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         return UserInfoResponse.from(user);
     }
 
@@ -63,10 +55,6 @@ public class UserService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         Region region = regionRepository.findByIdAndStatus(request.getRegionId(), RegionStatus.ACTIVE)
                 .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
 
