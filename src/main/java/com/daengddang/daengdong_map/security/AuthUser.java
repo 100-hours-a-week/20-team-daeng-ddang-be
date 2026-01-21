@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.security;
 
+import com.daengddang.daengdong_map.domain.user.UserStatus;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,14 +12,21 @@ import java.util.Collections;
 public class AuthUser implements UserDetails {
 
     private final Long userId;
+    private final UserStatus status;
 
-    public AuthUser(Long userId) {
+    public AuthUser(Long userId, UserStatus status) {
         this.userId = userId;
+        this.status = status;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return status == UserStatus.ACTIVE;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // v1: 권한 없음
+        return Collections.emptyList();
     }
 
     @Override public String getPassword() { return null; }
@@ -26,5 +34,4 @@ public class AuthUser implements UserDetails {
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
 }

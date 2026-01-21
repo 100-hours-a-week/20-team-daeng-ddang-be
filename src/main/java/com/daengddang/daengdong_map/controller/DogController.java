@@ -1,20 +1,11 @@
 package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.ErrorCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
-import com.daengddang.daengdong_map.dto.request.dog.DogRegisterRequest;
 import com.daengddang.daengdong_map.dto.response.dog.BreedListResponse;
-import com.daengddang.daengdong_map.dto.response.dog.DogRegisterResponse;
-import com.daengddang.daengdong_map.security.AuthUser;
 import com.daengddang.daengdong_map.service.BreedService;
 import com.daengddang.daengdong_map.service.DogService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;

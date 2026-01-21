@@ -1,4 +1,4 @@
-package com.daengddang.daengdong_map.controller.user;
+package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
 import com.daengddang.daengdong_map.common.ErrorCode;

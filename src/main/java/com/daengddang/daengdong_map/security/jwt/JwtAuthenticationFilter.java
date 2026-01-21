@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new BaseException(ErrorCode.UNAUTHORIZED);
             }
 
-            AuthUser authUser = new AuthUser(userId);
+            AuthUser authUser = new AuthUser(user.getId(), user.getStatus());
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -64,7 +64,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
-            // invalid/expired token -> treat as unauthenticated
         }
 
         filterChain.doFilter(request, response);
