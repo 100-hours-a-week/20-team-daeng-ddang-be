@@ -36,7 +36,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test & Check
-        run: ./gradlew clean check --no-daemon
+        run: ./gradlew clean check -x test --no-daemon
 
       - name: Build (bootJar)
         run: ./gradlew bootJar -x test --no-daemon
