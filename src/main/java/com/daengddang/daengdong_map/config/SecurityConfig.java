@@ -48,6 +48,7 @@ public class SecurityConfig {
                                 "/",
                                 "/api/v3/health",
                                 "/error",
+                                "/ws/**",
                                 "/api/v3/auth",
                                 "/api/v3/auth/",
                                 "/api/v1/auth/**",
