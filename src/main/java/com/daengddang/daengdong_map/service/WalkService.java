@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.service;
 
+import com.daengddang.daengdong_map.common.BlockIdUtil;
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.block.Block;
@@ -71,6 +72,7 @@ public class WalkService {
                 .longitude(request.getStartLng())
                 .recordedAt(now)
                 .build();
+
         walkPointRepository.save(startPoint);
 
         return WalkStartResponse.of(saved.getId(), saved.getStartTime());
@@ -78,6 +80,7 @@ public class WalkService {
 
     @Transactional
     public WalkEndResponse endWalk(Long userId, Long walkId, WalkEndRequest request) {
+
         if (request == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
@@ -149,7 +152,7 @@ public class WalkService {
 
     private OccupiedBlockResponse toOccupiedBlock(BlockOwnership ownership) {
         Block block = ownership.getBlock();
-        String blockId = "P_" + block.getX() + "_" + block.getY();
+        String blockId = BlockIdUtil.toBlockId(block.getX(), block.getY());
         return OccupiedBlockResponse.of(
                 blockId,
                 ownership.getDog().getId(),
