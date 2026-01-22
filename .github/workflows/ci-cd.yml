@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
   push:
-    branches: [ "main", "dev", "feat/ci-d"" ]
+    branches: [ "main", "dev", "feat/ci-d" ]
   # 코드 변경없이 CI 스크립트가 잘 작동하는지 확인하고 싶어서 사용
   workflow_dispatch: { }
 
