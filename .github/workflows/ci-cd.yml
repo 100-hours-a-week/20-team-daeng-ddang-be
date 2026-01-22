@@ -1,11 +1,10 @@
-name: BE CI
+name: BE CI/CD
 
 on:
   pull_request:
     branches: [ "main", "dev" ]
   push:
     branches: [ "main", "dev", "feat/ci-cd" ]
-  # 코드 변경없이 CI 스크립트가 잘 작동하는지 확인하고 싶어서 사용
   workflow_dispatch: { }
 
 permissions:
@@ -15,77 +14,22 @@ concurrency:
   group: be-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-jobs:
+env:
+  RELEASE_ID: ${{ github.sha }}
 
+jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
+      - name: Record CI start
+        id: ci_time
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Discord Notification (PR Opened)
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "🆕 새로운 PR이 생성되었습니다!",
-              "color": 10478271,
-              "description": "${{ github.event.pull_request.title }}",
-              "fields": [
-                {
-                  "name": "작성자",
-                  "value": "${{ github.actor }}",
-                  "inline": true
-                },
-                {
-                  "name": "브랜치",
-                  "value": "${{ github.head_ref }} -> ${{ github.base_ref }}",
-                  "inline": true
-                },
-                {
-                  "name": "PR 링크",
-                  "value": "[보러가기](${{ github.event.pull_request.html_url }})",
-                  "inline": false
-                }
-              ]
-            }]
-
-      - name: Discord Notification (Push)
-        #if: github.event_name == 'push'
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "🚀 새로운 Push가 발생했습니다!",
-              "color": 3447003,
-              "fields": [
-                {
-                  "name": "작성자",
-                  "value": "${{ github.actor }}",
-                  "inline": true
-                },
-                {
-                  "name": "브랜치",
-                  "value": "${{ github.ref_name }}",
-                  "inline": true
-                },
-                {
-                  "name": "커밋 메시지",
-                  "value": "${{ github.event.head_commit.message }}",
-                  "inline": false
-                },
-                {
-                  "name": "커밋 링크",
-                  "value": "[보러가기](${{ github.event.head_commit.url }})",
-                  "inline": false
-                }
-              ]
-            }]
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -98,10 +42,22 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Test & Check
-        run: ./gradlew clean check -x test --no-daemon
+        id: time_check
+        run: |
+          start=$(date +%s)
+          ./gradlew clean check -x test --no-daemon
+          end=$(date +%s)
+          echo "start=${start}" >> "$GITHUB_OUTPUT"
+          echo "end=${end}" >> "$GITHUB_OUTPUT"
 
       - name: Build (bootJar)
-        run: ./gradlew bootJar -x test --no-daemon
+        id: time_build
+        run: |
+          start=$(date +%s)
+          ./gradlew bootJar -x test --no-daemon
+          end=$(date +%s)
+          echo "start=${start}" >> "$GITHUB_OUTPUT"
+          echo "end=${end}" >> "$GITHUB_OUTPUT"
 
       - name: List artifacts
         run: ls -al build/libs
@@ -109,38 +65,100 @@ jobs:
       - name: Upload build artifact (jar)
         uses: actions/upload-artifact@v4
         with:
-          name: daeng-map-api-${{ github.sha }}
+          name: daeng-map-api-${{ env.RELEASE_ID }}
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 30
 
+      - name: Record CI end
+        id: ci_time_end
+        if: always()
+        run: echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate CI times
+        id: ci_calc
+        if: always()
+        run: |
+          ci_total=$(( ${{ steps.ci_time_end.outputs.end }} - ${{ steps.ci_time.outputs.start }} ))
+          check_sec=$(( ${{ steps.time_check.outputs.end || 0 }} - ${{ steps.time_check.outputs.start || 0 }} ))
+          build_sec=$(( ${{ steps.time_build.outputs.end || 0 }} - ${{ steps.time_build.outputs.start || 0 }} ))
+          echo "ci_total=${ci_total}" >> "$GITHUB_OUTPUT"
+          echo "check_sec=${check_sec}" >> "$GITHUB_OUTPUT"
+          echo "build_sec=${build_sec}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Discord (CI Success)
+        if: success()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_EMBEDS: |
+            [{
+              "title": "[BE] CI: success",
+              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "color": 5763719,
+              "description": "${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}",
+              "fields": [
+                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
+                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
+                {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
+                {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
+              ],
+              "timestamp": "${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}"
+            }]
+
+      - name: Notify Discord (CI Failure)
+        if: failure()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_EMBEDS: |
+            [{
+              "title": "[BE] CI: failure",
+              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "color": 15548997,
+              "description": "${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}",
+              "fields": [
+                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
+                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
+                {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
+                {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
+              ],
+              "timestamp": "${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}"
+            }]
+
   cd:
-    name: cd
-    #if : github.event_name == 'push'
+    name: CD
     needs: ci
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    timeout-minutes: 15
 
     steps:
-      # 아티팩트 다운로드
+      - name: Mark CD start
+        id: cd_time
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: daeng-map-api-${{ github.sha }}
+          name: daeng-map-api-${{ env.RELEASE_ID }}
           path: build/libs
 
-      # 1. 파일 전송 (SCP) -> 임시 폴더로 전송
       - name: Copy JAR to EC2
+        id: scp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_KEY }}
           source: "build/libs/*.jar"
-          target: "/tmp/be-deploy-${{ github.sha }}"
-          strip_components: 2 # build/libs/ 경로 제거하고 jar만 전송
+          target: "/tmp/be-deploy-${{ env.RELEASE_ID }}"
+          strip_components: 2
 
-      # 2. 배포 스크립트 실행 (Blue/Green Logic)
       - name: Deploy with Port Switching
+        id: deploy
         uses: appleboy/ssh-action@v1.0.3
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -199,7 +217,7 @@ jobs:
             # 3. 새 애플리케이션 실행 (PM2)
             echo "🚀 PM2로 애플리케이션 시작 (Port: $TARGET_PORT)..."
 
-            pm2 delete "daeng-backend-${TARGET_PORT}" 2>/dev/null || true  
+            pm2 delete "daeng-backend-${TARGET_PORT}" 2>/dev/null || true
 
             TARGET_PORT=${TARGET_PORT} JAR_PATH=${NEW_RELEASE_DIR}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
 
@@ -235,16 +253,69 @@ jobs:
                 pm2 save
               else
                 echo "🚨 Caddy Reload 실패! 롤백합니다."
-                 pm2 delete "daeng-backend-${TARGET_PORT}" || true
-                 exit 1
+                pm2 delete "daeng-backend-${TARGET_PORT}" || true
+                exit 1
               fi
             else
               echo "❌ 헬스 체크 실패. 배포를 중단합니다."
               pm2 delete "daeng-backend-${TARGET_PORT}" || true
               exit 1
-              echo "⚠️ 디버깅 모드: PM2 프로세스 유지"
             fi
 
             # 오래된 릴리즈 폴더 정리
             echo "🧹 오래된 릴리즈 정리 중..."
             cd ${RELEASES_DIR} && ls -t | tail -n +6 | xargs -I {} rm -rf {} || true
+
+      - name: Mark CD end
+        id: cd_time_end
+        if: always()
+        run: echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate CD times
+        id: cd_calc
+        if: always()
+        run: |
+          cd_total=$(( ${{ steps.cd_time_end.outputs.end }} - ${{ steps.cd_time.outputs.start }} ))
+          echo "cd_total=${cd_total}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Discord (CD Success)
+        if: success()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_EMBEDS: |
+            [{
+              "title": "[BE] CD: success",
+              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "color": 5763719,
+              "description": "${{ github.event.head_commit.message || github.workflow }}",
+              "fields": [
+                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
+                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
+                {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
+                {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
+              ],
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
+
+      - name: Notify Discord (CD Failure)
+        if: failure()
+        uses: Ilshidur/action-discord@0.4.0
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_EMBEDS: |
+            [{
+              "title": "[BE] CD: failure",
+              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "color": 15548997,
+              "description": "${{ github.event.head_commit.message || github.workflow }}",
+              "fields": [
+                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
+                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
+                {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
+                {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
+              ],
+              "timestamp": "${{ github.event.head_commit.timestamp }}"
+            }]
