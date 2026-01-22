@@ -139,8 +139,7 @@ jobs:
 
             pm2 delete "daeng-backend-${TARGET_PORT}" || true
 
-            pm2 start java --name "daeng-backend-${TARGET_PORT}" -- \
-              -jar -Dserver.port=${TARGET_PORT} -Dspring.profiles.active=prod ${NEW_RELEASE_DIR}/app.jar
+            TARGET_PORT=${TARGET_PORT} JAR_PATH=${NEW_RELEASE_DIR}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
 
             # 4. 헬스 체크
             echo "🏥 헬스 체크 시작..."
