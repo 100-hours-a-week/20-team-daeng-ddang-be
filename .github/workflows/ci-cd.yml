@@ -137,7 +137,7 @@ jobs:
             # 3. 새 애플리케이션 실행 (PM2)
             echo "🚀 PM2로 애플리케이션 시작 (Port: $TARGET_PORT)..."
 
-            pm2 delete "daeng-backend-${TARGET_PORT}" || true
+            pm2 delete "daeng-backend-${TARGET_PORT}" 2>/dev/null || true  
 
             TARGET_PORT=${TARGET_PORT} JAR_PATH=${NEW_RELEASE_DIR}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
 
@@ -173,13 +173,13 @@ jobs:
                 pm2 save
               else
                 echo "🚨 Caddy Reload 실패! 롤백합니다."
-                # pm2 delete "daeng-backend-${TARGET_PORT}" || true
-                # exit 1
+                 pm2 delete "daeng-backend-${TARGET_PORT}" || true
+                 exit 1
               fi
             else
               echo "❌ 헬스 체크 실패. 배포를 중단합니다."
-              # pm2 delete "daeng-backend-${TARGET_PORT}" || true
-              # exit 1
+              pm2 delete "daeng-backend-${TARGET_PORT}" || true
+              exit 1
               echo "⚠️ 디버깅 모드: PM2 프로세스 유지"
             fi
 
