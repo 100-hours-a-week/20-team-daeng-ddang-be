@@ -176,12 +176,16 @@ public class AuthController {
             throw new BaseException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
-        return UriComponentsBuilder
+        UriComponentsBuilder builder = UriComponentsBuilder
                 .fromUriString(kakaoOAuthProperties.getAuthorizeUri())
                 .queryParam("client_id", kakaoOAuthProperties.getClientId())
                 .queryParam("redirect_uri", kakaoOAuthProperties.getRedirectUri())
-                .queryParam("response_type", "code")
-                .build()
-                .toUriString();
+                .queryParam("response_type", "code");
+
+        if (kakaoOAuthProperties.getScope() != null && !kakaoOAuthProperties.getScope().isBlank()) {
+            builder.queryParam("scope", kakaoOAuthProperties.getScope());
+        }
+
+        return builder.build().toUriString();
     }
 }

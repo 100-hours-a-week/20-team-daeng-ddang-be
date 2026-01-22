@@ -28,25 +28,30 @@ public class AuthService {
     public LoginResult loginOrRegister(KakaoOAuthUser oauthUser) {
 
         Long kakaoUserId = oauthUser.getKakaoUserId();
+        String email = oauthUser.getEmail();
 
         User user = userRepository.findByKakaoUserId(kakaoUserId)
                 .orElse(null);
         boolean isNewUser = false;
         if (user == null) {
-            user = createNewUser(kakaoUserId);
+            user = createNewUser(kakaoUserId, email);
             isNewUser = true;
         }
 
         validateUserStatus(user);
+        if (email != null && (user.getKakaoEmail() == null || !email.equals(user.getKakaoEmail()))) {
+            user.updateKakaoEmail(email);
+        }
         user.updateLastLoginAt(LocalDateTime.now());
 
         return new LoginResult(user, isNewUser);
     }
 
-    private User createNewUser(Long kakaoUserId) {
+    private User createNewUser(Long kakaoUserId, String email) {
         return userRepository.save(
                 User.builder()
                         .kakaoUserId(kakaoUserId)
+                        .kakaoEmail(email)
                         .status(UserStatus.ACTIVE)
                         .build()
         );
