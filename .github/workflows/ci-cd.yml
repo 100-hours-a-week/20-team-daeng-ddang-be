@@ -78,6 +78,8 @@ jobs:
       - name: Calculate CI times
         id: ci_calc
         if: always()
+        env:
+          COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}
         run: |
           ci_total=$(( ${{ steps.ci_time_end.outputs.end }} - ${{ steps.ci_time.outputs.start }} ))
           check_sec=$(( ${{ steps.time_check.outputs.end || 0 }} - ${{ steps.time_check.outputs.start || 0 }} ))
@@ -85,6 +87,9 @@ jobs:
           echo "ci_total=${ci_total}" >> "$GITHUB_OUTPUT"
           echo "check_sec=${check_sec}" >> "$GITHUB_OUTPUT"
           echo "build_sec=${build_sec}" >> "$GITHUB_OUTPUT"
+          # 커밋 메시지에서 줄바꿈을 공백으로 변환하고, 쌍따옴표 이스케이프
+          safe_msg=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
+          echo "safe_msg=${safe_msg}" >> "$GITHUB_OUTPUT"
 
       - name: Notify Discord (CI Success)
         if: success()
@@ -96,7 +101,7 @@ jobs:
               "title": "[BE] CI: success",
               "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "color": 5763719,
-              "description": "${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}",
+              "description": "${{ steps.ci_calc.outputs.safe_msg }}",
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
@@ -118,7 +123,7 @@ jobs:
               "title": "[BE] CI: failure",
               "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "color": 15548997,
-              "description": "${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}",
+              "description": "${{ steps.ci_calc.outputs.safe_msg }}",
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
@@ -276,9 +281,14 @@ jobs:
       - name: Calculate CD times
         id: cd_calc
         if: always()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.workflow }}
         run: |
           cd_total=$(( ${{ steps.cd_time_end.outputs.end }} - ${{ steps.cd_time.outputs.start }} ))
           echo "cd_total=${cd_total}" >> "$GITHUB_OUTPUT"
+          # 커밋 메시지에서 줄바꿈을 공백으로 변환하고, 쌍따옴표 이스케이프
+          safe_msg=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
+          echo "safe_msg=${safe_msg}" >> "$GITHUB_OUTPUT"
 
       - name: Notify Discord (CD Success)
         if: success()
@@ -290,7 +300,7 @@ jobs:
               "title": "[BE] CD: success",
               "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "color": 5763719,
-              "description": "${{ github.event.head_commit.message || github.workflow }}",
+              "description": "${{ steps.cd_calc.outputs.safe_msg }}",
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
@@ -312,7 +322,7 @@ jobs:
               "title": "[BE] CD: failure",
               "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "color": 15548997,
-              "description": "${{ github.event.head_commit.message || github.workflow }}",
+              "description": "${{ steps.cd_calc.outputs.safe_msg }}",
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
