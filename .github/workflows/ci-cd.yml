@@ -1,0 +1,210 @@
+name: BE CI
+
+on:
+  pull_request:
+    branches: [ "main", "dev" ]
+  push:
+    branches: [ "main", "dev" ]
+
+  # 코드 변경없이 CI 스크립트가 잘 작동하는지 확인하고 싶어서 사용
+  workflow_dispatch: { }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: be-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+          cache: "gradle"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Test & Check
+        run: ./gradlew clean check -x test --no-daemon
+
+      - name: Build (bootJar)
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: List artifacts
+        run: ls -al build/libs
+
+      - name: Upload build artifact (jar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: daeng-map-api-${{ github.sha }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 30
+
+  cd:
+    name: cd
+    if : github.event_name == 'push'
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      # 아티팩트 다운로드
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: daeng-map-api-${{ github.sha }}
+          path: build/libs
+
+      # 1. 파일 전송 (SCP) -> 임시 폴더로 전송
+      - name: Copy JAR to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          source: "build/libs/*.jar"
+          target: "/tmp/be-deploy-${{ github.sha }}"
+          strip_components: 2 # build/libs/ 경로 제거하고 jar만 전송
+
+      # 2. 배포 스크립트 실행 (Blue/Green Logic)
+      - name: Deploy with Port Switching
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail # 에러 발생 시 즉시 종료
+            
+            # === 설정 변수 ===
+            BASE_DIR="/home/ubuntu/daeng-ddang-be"
+            RELEASES_DIR="${BASE_DIR}/releases"
+            NEW_RELEASE_DIR="${RELEASES_DIR}/${GITHUB_SHA}"
+            TEMP_JAR_DIR="/tmp/be-deploy-${GITHUB_SHA}"
+            UPSTREAM_CONF="/etc/caddy/conf.d/upstream.caddy"
+
+            echo "🚀 배포 시작: ${GITHUB_SHA}"
+            
+            # 폴더 생성
+            mkdir -p ${RELEASES_DIR}
+            sudo mkdir -p /etc/caddy/conf.d
+
+            # 1. 포트 확인 및 결정 (Blue/Green)
+            # 현재 8080이 살아있는지 확인 (타임아웃 2초)
+            IS_8080_ALIVE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/api/health || echo "fail")
+
+            if [ "$IS_8080_ALIVE" == "200" ]; then
+              TARGET_PORT=8081
+              CURRENT_PORT=8080
+            else
+              TARGET_PORT=8080
+              CURRENT_PORT=8081
+            fi
+
+            echo "🔵 현재 활성 포트: $CURRENT_PORT"
+            echo "🟢 배포 타겟 포트: $TARGET_PORT"
+
+            # 2. 파일 준비 (임시 폴더 -> 릴리즈 폴더)
+            mkdir -p ${NEW_RELEASE_DIR}
+            if [ -d "${TEMP_JAR_DIR}" ]; then
+                mv ${TEMP_JAR_DIR}/*.jar ${NEW_RELEASE_DIR}/app.jar
+            else
+                echo "❌ 전송된 JAR 파일이 없습니다."
+                exit 1
+            fi
+
+            # 기존에 타겟 포트에서 돌고 있는 좀비 프로세스가 있다면 정리
+            PID_TO_KILL=$(lsof -ti :${TARGET_PORT} || true)
+            if [ -n "$PID_TO_KILL" ]; then
+              echo "🧹 타겟 포트($TARGET_PORT)의 기존 프로세스 정리 (PID: $PID_TO_KILL)..."
+              kill -9 $PID_TO_KILL || true
+            fi
+
+            # 3. 새 애플리케이션 실행
+            echo "🚀 애플리케이션 시작 (Port: $TARGET_PORT)..."
+
+            nohup java -jar -Dserver.port=${TARGET_PORT} \
+              -Dspring.profiles.active=prod \
+              ${NEW_RELEASE_DIR}/app.jar > ${NEW_RELEASE_DIR}/app.log 2>&1 &
+
+            NEW_PID=$!
+            echo "📝 새 프로세스 PID: $NEW_PID"
+
+            # 4. 헬스 체크
+            echo "🏥 헬스 체크 시작..."
+            HEALTH_CHECK_URL="http://localhost:${TARGET_PORT}/api/health"
+            IS_HEALTHY=0
+
+            for i in {1..10}; do
+              sleep 5
+              # curl 실패 시 스크립트가 죽지 않도록 || echo "fail" 처리
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${HEALTH_CHECK_URL} || echo "fail")
+
+              if [ "$HTTP_CODE" == "200" ]; then
+                echo "✅ 헬스 체크 성공! (Port: $TARGET_PORT)"
+                IS_HEALTHY=1
+                break
+              else
+                echo "⏳ 시작 대기 중... ($i/10) (Code: $HTTP_CODE)"
+              fi
+            done
+
+            # 5. 결과 처리 및 트래픽 전환
+            if [ "$IS_HEALTHY" -eq 1 ]; then
+                echo "🔄 Caddy 연결 변경 중 (Port: $TARGET_PORT)..."
+            
+                # [수정] sudo 권한으로 파일 쓰기
+                echo "reverse_proxy localhost:${TARGET_PORT}" | sudo tee ${UPSTREAM_CONF} > /dev/null
+
+                if sudo caddy reload --config /etc/caddy/Caddyfile; then
+                    echo "🎉 배포 성공 및 트래픽 전환 완료."
+            
+                    # 6. 구버전 종료 (Graceful Shutdown)
+                    OLD_PID=$(lsof -ti :${CURRENT_PORT} || true)
+                    if [ -n "$OLD_PID" ]; then
+                        echo "🛑 구버전 프로세스 종료 (Port: $CURRENT_PORT, PID: $OLD_PID)..."
+                        kill -15 $OLD_PID
+                        sleep 5
+                        # 안 죽으면 강제 종료
+                        kill -9 $OLD_PID 2>/dev/null || true
+                    fi
+                else
+                    echo "🚨 Caddy Reload 실패! 롤백합니다."
+            
+                    # 롤백: 설정 원복
+                    echo "reverse_proxy localhost:${CURRENT_PORT}" | sudo tee ${UPSTREAM_CONF} > /dev/null
+                    sudo caddy reload --config /etc/caddy/Caddyfile
+            
+                    # 실패한 새 프로세스 종료
+                    kill -9 $NEW_PID
+                    exit 1
+                fi
+            else
+                echo "❌ 헬스 체크 실패. 배포를 중단하고 새 프로세스를 종료합니다."
+            
+                # 실패한 프로세스 정리 및 로그 출력
+                kill -9 $NEW_PID
+                echo "=== Application Log (Last 20 lines) ==="
+                tail -n 20 ${NEW_RELEASE_DIR}/app.log
+                exit 1
+            fi
+
+            # 오래된 릴리즈 폴더 정리 (최근 5개 유지)
+            echo "🧹 오래된 릴리즈 정리 중..."
+            cd ${RELEASES_DIR} && ls -t | tail -n +6 | xargs -I {} rm -rf {}
