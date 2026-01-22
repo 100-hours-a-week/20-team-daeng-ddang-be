@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 public class KakaoAccount {
 
+    @JsonProperty("has_email")
     private Boolean hasEmail;
 
     private String email;

@@ -9,14 +9,17 @@ public class UserInfoResponse {
 
     private Long userId;
 
+    private String kakaoEmail;
+
     private Long regionId;
     private Long parentRegionId;
 
     private String region;
 
     @Builder
-    public UserInfoResponse(Long userId, Long regionId, Long parentRegionId, String region) {
+    public UserInfoResponse(Long userId, String kakaoEmail, Long regionId, Long parentRegionId, String region) {
         this.userId = userId;
+        this.kakaoEmail = kakaoEmail;
         this.regionId = regionId;
         this.parentRegionId = parentRegionId;
         this.region = region;
@@ -35,6 +38,7 @@ public class UserInfoResponse {
 
         return UserInfoResponse.builder()
                 .userId(user.getId())
+                .kakaoEmail(user.getKakaoEmail())
                 .regionId(user.getRegion().getId())
                 .parentRegionId(
                         user.getRegion().getParent() != null

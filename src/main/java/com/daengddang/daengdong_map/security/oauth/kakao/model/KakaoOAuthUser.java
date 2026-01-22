@@ -9,10 +9,22 @@ import lombok.Getter;
 public class KakaoOAuthUser {
 
     private Long kakaoUserId;
+    private String email;
+
+    public KakaoOAuthUser(Long kakaoUserId) {
+        this(kakaoUserId, null);
+    }
 
     public static KakaoOAuthUser from(KakaoUserResponse response) {
+        String email = null;
+        if (response.getKakaoAccount() != null) {
+            if (Boolean.TRUE.equals(response.getKakaoAccount().getHasEmail())) {
+                email = response.getKakaoAccount().getEmail();
+            }
+        }
         return new KakaoOAuthUser(
-                response.getId()
+                response.getId(),
+                email
         );
     }
 }
