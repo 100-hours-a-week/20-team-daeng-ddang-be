@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
   push:
-    branches: [ "main", "dev", "feat/ci-cd" ]
+    branches: [ "main", "dev"]
   workflow_dispatch: { }
 
 permissions:
@@ -100,6 +100,7 @@ jobs:
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
                 {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
                 {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
                 {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
@@ -121,6 +122,7 @@ jobs:
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
                 {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
                 {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
                 {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
@@ -292,6 +294,7 @@ jobs:
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
                 {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
                 {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
                 {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
@@ -313,6 +316,7 @@ jobs:
               "fields": [
                 {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
                 {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
+                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
                 {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
                 {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
                 {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
