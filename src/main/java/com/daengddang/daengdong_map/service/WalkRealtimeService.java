@@ -3,6 +3,7 @@ package com.daengddang.daengdong_map.service;
 import com.daengddang.daengdong_map.common.BlockIdUtil;
 import com.daengddang.daengdong_map.dto.websocket.common.WebSocketEventType;
 import com.daengddang.daengdong_map.dto.websocket.common.WebSocketMessage;
+import com.daengddang.daengdong_map.dto.websocket.common.WebSocketErrorReason;
 import com.daengddang.daengdong_map.dto.websocket.inbound.LocationUpdatePayload;
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlockOccupiedPayload;
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlockOccupyFailReason;
@@ -25,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +47,18 @@ public class WalkRealtimeService {
         // 클라이언트 시간은 신뢰하지 않고 서버 시간을 사용한다.
         LocalDateTime timestamp = LocalDateTime.now();
 
+        Walk walk = walkRepository.findById(walkId)
+                .orElse(null);
+        if (walk == null || walk.getStatus() != WalkStatus.IN_PROGRESS) {
+            sendError(walkId, WebSocketErrorReason.INVALID_WALK_SESSION.getMessage());
+            return;
+        }
+
+        if (!isValidCoordinate(payload.getLat(), payload.getLng())) {
+            sendError(walkId, WebSocketErrorReason.INVALID_LOCATION.getMessage());
+            return;
+        }
+
         int blockX = BlockIdUtil.toBlockX(payload.getLat());
         int blockY = BlockIdUtil.toBlockY(payload.getLng());
         String blockId = BlockIdUtil.toBlockId(blockX, blockY);
@@ -53,15 +68,9 @@ public class WalkRealtimeService {
             BlockOccupyFailedPayload failPayload =
                     BlockOccupyFailedPayload.of(BlockOccupyFailReason.INSUFFICIENT_STAY_TIME);
             WebSocketMessage<BlockOccupyFailedPayload> message =
-                    new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPY_FAILED, failPayload, "블록 점유에 실패했습니다.");
+                    new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPY_FAILED, failPayload,
+                            WebSocketEventType.BLOCK_OCCUPY_FAILED.getMessage());
             messagingTemplate.convertAndSend("/topic/walks/" + walkId, message);
-            return;
-        }
-
-        Walk walk = walkRepository.findById(walkId)
-                .orElse(null);
-        if (walk == null || walk.getStatus() != WalkStatus.IN_PROGRESS) {
-            sendError(walkId, "유효하지 않은 산책 세션입니다.");
             return;
         }
 
@@ -114,15 +123,37 @@ public class WalkRealtimeService {
     private void sendBlockOccupied(Long walkId, String blockId, Dog dog, LocalDateTime occupiedAt) {
         BlockOccupiedPayload payload = BlockOccupiedPayload.of(blockId, dog.getId(), dog.getName(), occupiedAt);
         WebSocketMessage<BlockOccupiedPayload> message =
-                new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPIED, payload, null);
-        messagingTemplate.convertAndSend("/topic/walks/" + walkId, message);
+                new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPIED, payload,
+                        WebSocketEventType.BLOCK_OCCUPIED.getMessage());
+        sendAfterCommit(() -> messagingTemplate.convertAndSend("/topic/walks/" + walkId, message));
     }
 
     private void sendBlockTaken(Long walkId, String blockId, Long previousDogId, Long newDogId, LocalDateTime takenAt) {
         BlockTakenPayload payload = BlockTakenPayload.of(blockId, previousDogId, newDogId, takenAt);
         WebSocketMessage<BlockTakenPayload> message =
-                new WebSocketMessage<>(WebSocketEventType.BLOCK_TAKEN, payload, null);
-        messagingTemplate.convertAndSend("/topic/walks/" + walkId, message);
+                new WebSocketMessage<>(WebSocketEventType.BLOCK_TAKEN, payload,
+                        WebSocketEventType.BLOCK_TAKEN.getMessage());
+        sendAfterCommit(() -> messagingTemplate.convertAndSend("/topic/walks/" + walkId, message));
+    }
+
+    private boolean isValidCoordinate(double lat, double lng) {
+        if (!Double.isFinite(lat) || !Double.isFinite(lng)) {
+            return false;
+        }
+        return lat >= -90.0 && lat <= 90.0 && lng >= -180.0 && lng <= 180.0;
+    }
+
+    private void sendAfterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+            return;
+        }
+        action.run();
     }
 
     private static class StayState {
