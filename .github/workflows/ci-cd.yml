@@ -242,7 +242,7 @@ jobs:
                 IS_HEALTHY=1
                 break
               else
-                echo "⏳ 시작 대기 중... ($i/10) (Code: $HTTP_CODE)"
+                echo "⏳ 시작 대기 중.... ($i/10) (Code: $HTTP_CODE)"
               fi
             done
 
