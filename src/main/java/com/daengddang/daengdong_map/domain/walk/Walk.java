@@ -36,11 +36,11 @@ public class Walk {
     @Column(name = "walk_id")
     private Long id;
 
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
+    @Column(name = "started_at", nullable = false)
+    private LocalDateTime startedAt;
 
-    @Column(name = "end_time")
-    private LocalDateTime endTime;
+    @Column(name = "ended_at")
+    private LocalDateTime endedAt;
 
     @Column(name = "distance")
     private Double distance;
@@ -60,14 +60,14 @@ public class Walk {
     private Dog dog;
 
     @Builder
-    private Walk(LocalDateTime startTime,
-                LocalDateTime endTime,
+    private Walk(LocalDateTime startedAt,
+                LocalDateTime endedAt,
                 Double distance,
                 Integer duration,
                 WalkStatus status,
                 Dog dog) {
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
         this.distance = distance;
         this.duration = duration;
         this.status = status == null ? WalkStatus.IN_PROGRESS : status;
@@ -84,8 +84,8 @@ public class Walk {
         }
     }
 
-    public void finish(LocalDateTime endTime, Double distance, Integer duration) {
-        this.endTime = endTime;
+    public void finish(LocalDateTime endedAt, Double distance, Integer duration) {
+        this.endedAt = endedAt;
         this.distance = distance;
         this.duration = duration;
         this.status = WalkStatus.FINISHED;

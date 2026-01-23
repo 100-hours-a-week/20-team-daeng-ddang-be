@@ -60,7 +60,7 @@ public class WalkService {
 
         Walk walk = Walk.builder()
                 .dog(dog)
-                .startTime(now)
+                .startedAt(now)
                 .status(WalkStatus.IN_PROGRESS)
                 .build();
 
@@ -75,7 +75,7 @@ public class WalkService {
 
         walkPointRepository.save(startPoint);
 
-        return WalkStartResponse.of(saved.getId(), saved.getStartTime());
+        return WalkStartResponse.of(saved.getId(), saved.getStartedAt(), saved.getStatus());
     }
 
     @Transactional
@@ -123,8 +123,8 @@ public class WalkService {
 
         return WalkEndResponse.of(
                 walk.getId(),
-                walk.getStartTime(),
-                walk.getEndTime(),
+                walk.getStartedAt(),
+                walk.getEndedAt(),
                 request.getTotalDistanceKm(),
                 request.getDurationSeconds(),
                 occupiedBlockCount,

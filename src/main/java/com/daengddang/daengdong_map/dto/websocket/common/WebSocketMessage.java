@@ -24,7 +24,7 @@ public class WebSocketMessage<T> {
     }
 
     public static <T> WebSocketMessage<T> of(WebSocketEventType type, T data) {
-        return new WebSocketMessage<>(type, data, null);
+        return new WebSocketMessage<>(type, data, type.getMessage());
     }
 
     public static WebSocketMessage<Void> error(String message) {
