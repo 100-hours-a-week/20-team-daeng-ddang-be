@@ -139,7 +139,7 @@ jobs:
     name: CD
     needs: ci
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.base_ref == 'dev')
     timeout-minutes: 15
 
     steps:
@@ -157,9 +157,9 @@ jobs:
         id: scp
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.AWS_HOST }}
+          host: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_HOST || secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ secrets.AWS_SSH_KEY }}
+          key: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_SSH_KEY || secrets.AWS_SSH_KEY }}
           source: "build/libs/*.jar"
           target: "/tmp/be-deploy-${{ env.RELEASE_ID }}"
           strip_components: 2
@@ -170,9 +170,9 @@ jobs:
         env:
           GITHUB_SHA: ${{ github.sha }}
         with:
-          host: ${{ secrets.AWS_HOST }}
+          host: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_HOST || secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ secrets.AWS_SSH_KEY }}
+          key: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_SSH_KEY || secrets.AWS_SSH_KEY }}
           envs: GITHUB_SHA
           script: |
             #!/usr/bin/env bash
