@@ -210,7 +210,7 @@ jobs:
             if [ -d "${TEMP_JAR_DIR}" ]; then
               mv ${TEMP_JAR_DIR}/*.jar ${NEW_RELEASE_DIR}/app.jar
             else
-              echo "❌ 전송된 JAR 파일이 없습니다."
+              echo "❌ 전송된 JAR 파일이 없습니다.."
               exit 1
             fi
 
