@@ -21,7 +21,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class BlockSyncService {
 
-    private static final int AREA_SIZE = 7;
+    private static final int AREA_SIZE = 13;
     private static final long SYNC_MIN_INTERVAL_SECONDS = 2;
 
     private final BlockOwnershipRepository blockOwnershipRepository;
