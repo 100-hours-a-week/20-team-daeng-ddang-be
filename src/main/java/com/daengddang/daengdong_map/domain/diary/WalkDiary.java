@@ -41,19 +41,14 @@ public class WalkDiary extends BaseTimeEntity {
     @JoinColumn(name = "walk_id", nullable = false)
     private Walk walk;
 
-    @Column(name = "expression_id")
-    private Long expressionId;
 
     @Builder
     private WalkDiary(String memo,
                       String mapImageUrl,
                       User user,
-                      Walk walk,
-                      Long expressionId) {
+                      Walk walk) {
         this.memo = memo;
         this.mapImageUrl = mapImageUrl;
         this.user = user;
-        this.walk = walk;
-        this.expressionId = expressionId;
-    }
+        this.walk = walk;}
 }
