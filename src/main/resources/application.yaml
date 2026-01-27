@@ -63,3 +63,7 @@ aws:
   s3:
     bucket: ${AWS_REGION}
   region: ${AWS_S3_BUCKET}
+
+ai:
+  fastapi:
+    mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}

@@ -58,6 +58,8 @@ public enum SuccessCode {
     MISSION_RECORD_SAVED("돌발미션 기록이 저장되었습니다."),
     MISSION_ANALYSIS_COMPLETED("돌발미션 분석이 완료되었습니다."),
     MISSION_ANALYSIS_RESULT_RETRIEVED("돌발미션 분석 결과 조회에 성공했습니다."),
+    MISSION_UPLOAD_SAVED("돌발미션 업로드 정보가 저장되었습니다."),
+    MISSION_UPLOAD_LIST_RETRIEVED("돌발미션 업로드 목록 조회에 성공했습니다."),
 
     HEALTH_CHECK_OK("success");
 
