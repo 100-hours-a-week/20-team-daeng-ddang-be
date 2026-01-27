@@ -87,6 +87,16 @@ public class UserController {
         return ApiResponse.success(SuccessCode.USER_INFO_RETRIEVED, userService.getUserInfo(authUser.getUserId()));
     }
 
+    @DeleteMapping
+    public ApiResponse<Void> withdrawUser(@AuthenticationPrincipal AuthUser authUser) {
+        if (authUser == null) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED);
+        }
+
+        userService.withdrawUser(authUser.getUserId());
+        return ApiResponse.success(SuccessCode.USER_DELETED);
+    }
+
     @PostMapping("/dogs")
     public ApiResponse<DogRegisterResponse> registerDog(
             @AuthenticationPrincipal AuthUser authUser,

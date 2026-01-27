@@ -10,6 +10,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByKakaoUserId(Long kakaoUserId);
 
+    @Query(value = "select * from users where kakao_user_id = :kakaoUserId", nativeQuery = true)
+    Optional<User> findByKakaoUserIdIncludingDeleted(@Param("kakaoUserId") Long kakaoUserId);
+
     boolean existsByKakaoUserId(Long kakaoUserId);
 
     @Query("""

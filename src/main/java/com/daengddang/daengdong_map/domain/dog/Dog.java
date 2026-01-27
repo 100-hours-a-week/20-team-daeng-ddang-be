@@ -112,4 +112,9 @@ public class Dog extends BaseTimeEntity {
         }
     }
 
+    public void restore() {
+        this.status = DogStatus.ACTIVE;
+        this.deletedAt = null;
+    }
+
 }

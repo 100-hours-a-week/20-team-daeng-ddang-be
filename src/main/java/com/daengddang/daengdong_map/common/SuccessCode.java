@@ -14,6 +14,7 @@ public enum SuccessCode {
     USER_INFO_REGISTERED("사용자 정보 등록에 성공했습니다."),
     USER_INFO_UPDATED("사용자 정보 수정에 성공했습니다."),
     USER_INFO_RETRIEVED("사용자 정보 조회에 성공했습니다."),
+    USER_DELETED("회원 탈퇴가 완료되었습니다."),
 
     DOG_REGISTERED("강아지 정보 등록에 성공했습니다."),
     DOG_INFO_RETRIEVED("강아지 정보 조회에 성공했습니다."),

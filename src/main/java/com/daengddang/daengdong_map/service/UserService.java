@@ -13,6 +13,7 @@ import com.daengddang.daengdong_map.dto.response.user.UserSummaryResponse;
 import com.daengddang.daengdong_map.dto.response.user.UserInfoResponse;
 import com.daengddang.daengdong_map.dto.response.user.UserRegisterResponse;
 import com.daengddang.daengdong_map.repository.DogRepository;
+import com.daengddang.daengdong_map.repository.RefreshTokenRepository;
 import com.daengddang.daengdong_map.repository.RegionRepository;
 import com.daengddang.daengdong_map.repository.UserRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
@@ -29,6 +30,7 @@ public class UserService {
     private final RegionRepository regionRepository;
     private final DogRepository dogRepository;
     private final WalkRepository walkRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public UserRegisterResponse registerUserInfo(Long userId, UserRegisterRequest dto) {
@@ -96,5 +98,21 @@ public class UserService {
                 Math.toIntExact(totalCount),
                 totalDistanceKm
         );
+    }
+
+    @Transactional
+    public void withdrawUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+
+        Dog dog = dogRepository.findByUser(user).orElse(null);
+        if (dog != null) {
+            dogRepository.delete(dog);
+        }
+
+        user.updateKakaoEmail(null);
+        userRepository.saveAndFlush(user);
+        userRepository.delete(user);
+        refreshTokenRepository.deleteAllByUserId(userId);
     }
 }

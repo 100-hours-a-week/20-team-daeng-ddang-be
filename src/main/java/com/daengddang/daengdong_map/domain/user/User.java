@@ -79,4 +79,9 @@ public class User extends BaseTimeEntity {
         this.status = UserStatus.DELETED;
         this.deletedAt = deletedAt;
     }
+
+    public void restore() {
+        this.status = UserStatus.ACTIVE;
+        this.deletedAt = null;
+    }
 }
