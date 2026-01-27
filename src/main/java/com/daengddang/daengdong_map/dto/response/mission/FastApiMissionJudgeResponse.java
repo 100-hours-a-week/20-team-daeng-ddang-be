@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.dto.response.mission;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.Getter;
 
@@ -15,7 +15,7 @@ public class FastApiMissionJudgeResponse {
     private Long walkId;
 
     @JsonProperty("analyzed_at")
-    private LocalDateTime analyzedAt;
+    private OffsetDateTime analyzedAt;
 
     private List<MissionResult> missions;
 

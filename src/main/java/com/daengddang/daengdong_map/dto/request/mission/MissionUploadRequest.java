@@ -8,9 +8,6 @@ import lombok.Getter;
 public class MissionUploadRequest {
 
     @NotNull
-    private Long walkId;
-
-    @NotNull
     private Long missionId;
 
     @NotBlank
