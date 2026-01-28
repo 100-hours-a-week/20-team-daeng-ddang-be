@@ -16,6 +16,9 @@ public class FaceAnalyzeResponse {
     @JsonProperty("summary")
     private final String summary;
 
+    @JsonProperty("video_url")
+    private final String videoUrl;
+
     @JsonProperty("emotion_probabilities")
     private final EmotionProbabilities emotionProbabilities;
 
@@ -23,20 +26,24 @@ public class FaceAnalyzeResponse {
     private FaceAnalyzeResponse(String analysisId,
                                 String predictedEmotion,
                                 String summary,
+                                String videoUrl,
                                 EmotionProbabilities emotionProbabilities) {
         this.analysisId = analysisId;
         this.predictedEmotion = predictedEmotion;
+        this.videoUrl = videoUrl;
         this.summary = summary;
         this.emotionProbabilities = emotionProbabilities;
     }
 
     public static FaceAnalyzeResponse from(String analysisId,
                                            String predictedEmotion,
+                                           String videoUrl,
                                            String summary,
                                            EmotionProbabilities emotionProbabilities) {
         return FaceAnalyzeResponse.builder()
                 .analysisId(analysisId)
                 .predictedEmotion(predictedEmotion)
+                .videoUrl(videoUrl)
                 .summary(summary)
                 .emotionProbabilities(emotionProbabilities)
                 .build();

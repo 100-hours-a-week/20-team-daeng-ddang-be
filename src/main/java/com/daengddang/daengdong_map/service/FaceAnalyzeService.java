@@ -139,6 +139,7 @@ public class FaceAnalyzeService {
         return FaceAnalyzeResponse.from(
                 analysisId,
                 response.getPredictedEmotion(),
+                response.getVideoUrl(),
                 response.getSummary(),
                 responseProbabilities
         );

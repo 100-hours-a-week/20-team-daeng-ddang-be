@@ -17,6 +17,9 @@ public class FastApiFaceAnalyzeResponse {
     @JsonProperty("emotion_probabilities")
     private EmotionProbabilities emotionProbabilities;
 
+    @JsonProperty("video_url")
+    private String videoUrl;
+
     @Getter
     public static class EmotionProbabilities {
 
