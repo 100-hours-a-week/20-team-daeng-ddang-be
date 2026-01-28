@@ -93,7 +93,7 @@ public class WalkService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        if (request.getTotalDistanceKm() < 0 || request.getDurationSeconds() <= 0) {
+        if (request.getTotalDistanceKm() < 0 || request.getDurationSeconds() < 0) {
             throw new BaseException(ErrorCode.INVALID_WALK_METRICS);
         }
 
