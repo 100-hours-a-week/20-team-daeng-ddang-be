@@ -74,7 +74,7 @@ public class WalkWebSocketService {
                             WebSocketEventType.BLOCK_OCCUPY_FAILED.getMessage());
 
             messagingTemplate.convertAndSend("/topic/walks/" + walkId, message);
-            blockSyncService.syncBlocks(walkId, blockX, blockY, areaKey, timestamp);
+            blockSyncService.syncBlocksOnAreaChange(walkId, blockX, blockY, areaKey, timestamp);
             return;
         }
 
@@ -99,7 +99,7 @@ public class WalkWebSocketService {
 
         if (ownership.getDog().getId().equals(dog.getId())) {
             ownership.updateLastPassedAt(timestamp);
-            blockSyncService.syncBlocks(walkId, blockX, blockY, areaKey, timestamp);
+            blockSyncService.syncBlocksOnAreaChange(walkId, blockX, blockY, areaKey, timestamp);
             return;
         }
 

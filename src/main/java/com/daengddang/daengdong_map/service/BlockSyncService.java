@@ -51,6 +51,14 @@ public class BlockSyncService {
         sendBlocksSync(blockX, blockY, areaKey);
     }
 
+    public void syncBlocksOnAreaChange(Long walkId, int blockX, int blockY, String areaKey, LocalDateTime now) {
+        SyncState state = syncStates.get(walkId);
+        if (state == null || !state.areaKey.equals(areaKey)) {
+            syncStates.put(walkId, new SyncState(areaKey, now));
+            sendBlocksSync(blockX, blockY, areaKey);
+        }
+    }
+
     private void sendBlocksSync(int blockX, int blockY, String areaKey) {
         AreaRange range = toAreaRange(blockX, blockY);
         List<BlockSyncEntry> entries = blockOwnershipRepository.findAllByBlockRange(
