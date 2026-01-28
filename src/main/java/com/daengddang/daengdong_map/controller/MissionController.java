@@ -23,7 +23,7 @@ public class MissionController {
     private final MissionJudgeService missionJudgeService;
     private final MissionUploadService missionUploadService;
 
-    @PostMapping("/judge")
+    @PostMapping("/analysis")
     public ApiResponse<MissionJudgeResponse> judgeMissions(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long walkId
@@ -34,7 +34,7 @@ public class MissionController {
         return ApiResponse.success(SuccessCode.MISSION_ANALYSIS_COMPLETED, response);
     }
 
-    @PostMapping("/uploads")
+    @PostMapping
     public ApiResponse<MissionUploadResponse> saveUpload(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long walkId,
@@ -45,7 +45,7 @@ public class MissionController {
         return ApiResponse.success(SuccessCode.MISSION_UPLOAD_SAVED, response);
     }
 
-    @GetMapping("/uploads")
+    @GetMapping
     public ApiResponse<MissionUploadListResponse> getUploads(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long walkId

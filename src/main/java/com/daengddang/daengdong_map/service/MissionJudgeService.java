@@ -41,7 +41,7 @@ public class MissionJudgeService {
     private final MissionRecordRepository missionRecordRepository;
     private final MissionUploadRepository missionUploadRepository;
     private final MissionJudgeMapper missionJudgeMapper;
-    private final FastApiMissionClient fastApiMissionClient;
+    private final FastApiClient fastApiClient;
 
     @Transactional
     public MissionJudgeResponse judge(Long userId, Long walkId) {
@@ -77,7 +77,7 @@ public class MissionJudgeService {
         FastApiMissionJudgeRequest fastApiRequest =
                 missionJudgeMapper.toFastApiRequest(uploads, missions, walkId);
         FastApiMissionJudgeResponse fastApiResponse =
-                fastApiMissionClient.requestMissionJudge(fastApiRequest);
+                fastApiClient.requestMissionJudge(fastApiRequest);
         MissionJudgeResponse response = missionJudgeMapper.toPublicResponse(fastApiResponse);
         saveMissionRecords(uploads, missions, fastApiResponse, walk, submittedAt);
 

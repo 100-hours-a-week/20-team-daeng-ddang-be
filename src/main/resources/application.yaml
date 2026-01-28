@@ -71,3 +71,4 @@ aws:
 ai:
   fastapi:
     mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}
+    face-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}
