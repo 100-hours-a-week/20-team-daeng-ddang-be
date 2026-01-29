@@ -26,8 +26,7 @@ public class WalkDiary extends BaseTimeEntity {
     @Column(name = "walk_diary_id")
     private Long id;
 
-    @Column(name = "memo")
-    @Lob
+    @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
     @Column(name = "map_image_url", nullable = true, length = 255)
