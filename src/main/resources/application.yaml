@@ -23,7 +23,11 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-
+springdoc:
+  api-docs:
+    path: /api/v3/api-docs
+  swagger-ui:
+    path: /api/swagger-ui.html
 
 jwt:
   secret: ${JWT_SECRET}
@@ -63,3 +67,8 @@ aws:
   s3:
     bucket: ${AWS_REGION}
   region: ${AWS_S3_BUCKET}
+
+ai:
+  fastapi:
+    mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}
+    face-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}

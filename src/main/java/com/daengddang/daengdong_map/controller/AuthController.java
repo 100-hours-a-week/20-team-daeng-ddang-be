@@ -40,11 +40,11 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ApiResponse<AuthTokenResponse> kakaoLogin(
-            @RequestBody KakaoLoginRequest request,
+            @RequestBody KakaoLoginRequest dto,
             HttpServletResponse response
     ) {
         KakaoOAuthUser oauthUser =
-                kakaoOAuthService.authenticate(request.getCode());
+                kakaoOAuthService.authenticate(dto.getCode());
 
         AuthService.LoginResult loginResult = authService.loginOrRegister(oauthUser);
         User user = loginResult.user();
@@ -54,7 +54,7 @@ public class AuthController {
 
         return ApiResponse.success(
                 SuccessCode.LOGIN_SUCCESS,
-                AuthTokenResponse.of(
+                AuthTokenResponse.from(
                         tokenPair.getAccessToken(),
                         loginResult.isNewUser(),
                         user.getId()
@@ -96,7 +96,7 @@ public class AuthController {
 
         return ApiResponse.success(
                 SuccessCode.TOKEN_REFRESHED,
-                AuthTokenResponse.of(
+                AuthTokenResponse.from(
                         newAccessToken,
                         false,
                         null   // userId는 프론트에서 굳이 필요 없으면 null

@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.service;
 
+import com.daengddang.daengdong_map.common.BlockIdUtil;
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.block.Block;
@@ -39,9 +40,9 @@ public class WalkService {
     private final BlockOwnershipRepository blockOwnershipRepository;
 
     @Transactional
-    public WalkStartResponse startWalk(Long userId, WalkStartRequest request) {
+    public WalkStartResponse startWalk(Long userId, WalkStartRequest dto) {
 
-        if (request == null) {
+        if (dto == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
@@ -57,27 +58,20 @@ public class WalkService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        Walk walk = Walk.builder()
-                .dog(dog)
-                .startTime(now)
-                .status(WalkStatus.IN_PROGRESS)
-                .build();
+        Walk walk = WalkStartRequest.of(dog, now);
 
         Walk saved = walkRepository.save(walk);
 
-        WalkPoint startPoint = WalkPoint.builder()
-                .walk(saved)
-                .latitude(request.getStartLat())
-                .longitude(request.getStartLng())
-                .recordedAt(now)
-                .build();
+        WalkPoint startPoint = WalkStartRequest.of(dto, saved, now);
+
         walkPointRepository.save(startPoint);
 
-        return WalkStartResponse.of(saved.getId(), saved.getStartTime());
+        return WalkStartResponse.from(saved.getId(), saved.getStartedAt(), saved.getStatus());
     }
 
     @Transactional
     public WalkEndResponse endWalk(Long userId, Long walkId, WalkEndRequest request) {
+
         if (request == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
@@ -99,7 +93,7 @@ public class WalkService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        if (request.getTotalDistanceKm() < 0 || request.getDurationSeconds() <= 0) {
+        if (request.getTotalDistanceKm() < 0 || request.getDurationSeconds() < 0) {
             throw new BaseException(ErrorCode.INVALID_WALK_METRICS);
         }
 
@@ -108,20 +102,15 @@ public class WalkService {
 
         walk.finish(now, distanceMeters, request.getDurationSeconds());
 
-        WalkPoint endPoint = WalkPoint.builder()
-                .walk(walk)
-                .latitude(request.getEndLat())
-                .longitude(request.getEndLng())
-                .recordedAt(now)
-                .build();
+        WalkPoint endPoint = WalkEndRequest.of(request, walk, now);
         walkPointRepository.save(endPoint);
 
         int occupiedBlockCount = blockOwnershipRepository.findAllByDog(dog).size();
 
-        return WalkEndResponse.of(
+        return WalkEndResponse.from(
                 walk.getId(),
-                walk.getStartTime(),
-                walk.getEndTime(),
+                walk.getStartedAt(),
+                walk.getEndedAt(),
                 request.getTotalDistanceKm(),
                 request.getDurationSeconds(),
                 occupiedBlockCount,
@@ -144,13 +133,13 @@ public class WalkService {
                 .map(this::toOccupiedBlock)
                 .toList();
 
-        return OccupiedBlockListResponse.of(blocks);
+        return OccupiedBlockListResponse.from(blocks);
     }
 
     private OccupiedBlockResponse toOccupiedBlock(BlockOwnership ownership) {
         Block block = ownership.getBlock();
-        String blockId = "P_" + block.getX() + "_" + block.getY();
-        return OccupiedBlockResponse.of(
+        String blockId = BlockIdUtil.toBlockId(block.getX(), block.getY());
+        return OccupiedBlockResponse.from(
                 blockId,
                 ownership.getDog().getId(),
                 ownership.getAcquiredAt()

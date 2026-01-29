@@ -13,7 +13,7 @@ public class UserRegisterResponse {
         this.regionId = regionId;
     }
 
-    public static UserRegisterResponse of(Long userId, Long regionId) {
+    public static UserRegisterResponse from(Long userId, Long regionId) {
         return new UserRegisterResponse(userId, regionId);
     }
 }

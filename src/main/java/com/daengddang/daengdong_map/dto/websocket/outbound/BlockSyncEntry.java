@@ -19,7 +19,7 @@ public class BlockSyncEntry {
         this.dogId = dogId;
     }
 
-    public static BlockSyncEntry of(String blockId, Long dogId) {
+    public static BlockSyncEntry from(String blockId, Long dogId) {
         return new BlockSyncEntry(blockId, dogId);
     }
 }

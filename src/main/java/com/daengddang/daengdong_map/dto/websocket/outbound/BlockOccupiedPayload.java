@@ -26,7 +26,7 @@ public class BlockOccupiedPayload {
         this.occupiedAt = occupiedAt;
     }
 
-    public static BlockOccupiedPayload of(String blockId, Long dogId, String dogName, LocalDateTime occupiedAt) {
+    public static BlockOccupiedPayload from(String blockId, Long dogId, String dogName, LocalDateTime occupiedAt) {
         return new BlockOccupiedPayload(blockId, dogId, dogName, occupiedAt);
     }
 }

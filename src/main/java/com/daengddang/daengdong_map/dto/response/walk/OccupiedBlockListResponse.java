@@ -12,7 +12,7 @@ public class OccupiedBlockListResponse {
         this.blocks = blocks;
     }
 
-    public static OccupiedBlockListResponse of(List<OccupiedBlockResponse> blocks) {
+    public static OccupiedBlockListResponse from(List<OccupiedBlockResponse> blocks) {
         return new OccupiedBlockListResponse(blocks);
     }
 }

@@ -33,7 +33,7 @@ public class WalkEndResponse {
         this.status = status;
     }
 
-    public static WalkEndResponse of(Long walkId,
+    public static WalkEndResponse from(Long walkId,
                                      LocalDateTime startedAt,
                                      LocalDateTime endedAt,
                                      Double totalDistanceKm,

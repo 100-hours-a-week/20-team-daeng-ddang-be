@@ -20,7 +20,7 @@ public class ConnectedPayload {
         this.connectedAt = connectedAt;
     }
 
-    public static ConnectedPayload of(Long walkId, LocalDateTime connectedAt) {
+    public static ConnectedPayload from(Long walkId, LocalDateTime connectedAt) {
         return new ConnectedPayload(walkId, connectedAt);
     }
 }

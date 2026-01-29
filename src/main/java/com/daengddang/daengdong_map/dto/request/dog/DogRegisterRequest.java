@@ -1,6 +1,9 @@
 package com.daengddang.daengdong_map.dto.request.dog;
 
+import com.daengddang.daengdong_map.domain.breed.Breed;
+import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.domain.dog.DogGender;
+import com.daengddang.daengdong_map.domain.user.User;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,4 +35,21 @@ public class DogRegisterRequest {
 
     @Size(max = 255)
     private String profileImageUrl;
+
+    public static Dog of(DogRegisterRequest dto, User user, Breed breed) {
+        String name = dto.getName() == null ? null : dto.getName().trim();
+        boolean isNeutered = Boolean.TRUE.equals(dto.getIsNeutered());
+        Float weight = dto.getWeight() == null ? null : dto.getWeight().floatValue();
+
+        return Dog.builder()
+                .name(name)
+                .breed(breed)
+                .birthDate(dto.getBirthDate())
+                .gender(dto.getGender())
+                .isNeutered(isNeutered)
+                .weight(weight)
+                .profileImageUrl(dto.getProfileImageUrl())
+                .user(user)
+                .build();
+    }
 }

@@ -7,16 +7,16 @@ import lombok.Getter;
 @Getter
 public class BlockOccupyFailedPayload {
 
-    private final BlockOccupyFailReason reason;
+    private final String reason;
 
     @JsonCreator
     public BlockOccupyFailedPayload(
             @JsonProperty("reason") BlockOccupyFailReason reason
     ) {
-        this.reason = reason;
+        this.reason = reason.getMessage();
     }
 
-    public static BlockOccupyFailedPayload of(BlockOccupyFailReason reason) {
+    public static BlockOccupyFailedPayload from(BlockOccupyFailReason reason) {
         return new BlockOccupyFailedPayload(reason);
     }
 }
