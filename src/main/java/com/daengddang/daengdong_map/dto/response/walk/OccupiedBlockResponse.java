@@ -18,7 +18,7 @@ public class OccupiedBlockResponse {
         this.occupiedAt = occupiedAt;
     }
 
-    public static OccupiedBlockResponse of(String blockId, Long dogId, LocalDateTime occupiedAt) {
+    public static OccupiedBlockResponse from(String blockId, Long dogId, LocalDateTime occupiedAt) {
         return OccupiedBlockResponse.builder()
                 .blockId(blockId)
                 .dogId(dogId)

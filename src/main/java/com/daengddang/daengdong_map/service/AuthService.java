@@ -1,9 +1,9 @@
 package com.daengddang.daengdong_map.service;
 
-import com.daengddang.daengdong_map.common.ErrorCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
+import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.domain.user.UserStatus;
+import com.daengddang.daengdong_map.repository.DogRepository;
 import com.daengddang.daengdong_map.repository.UserRepository;
 import com.daengddang.daengdong_map.security.oauth.kakao.model.KakaoOAuthUser;
 import java.time.LocalDateTime;
@@ -16,12 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final DogRepository dogRepository;
 
     /**
      * Kakao OAuth 결과로 User를 확정한다.
      *
      * - 신규 유저면 최소 정보만으로 생성
-     * - 기존 유저면 상태 검증
+     * - 기존 유저면 상태 복구/확인
      * - region 등 프로필 정보는 관여하지 않는다
      */
     @Transactional
@@ -30,7 +31,7 @@ public class AuthService {
         Long kakaoUserId = oauthUser.getKakaoUserId();
         String email = oauthUser.getEmail();
 
-        User user = userRepository.findByKakaoUserId(kakaoUserId)
+        User user = userRepository.findByKakaoUserIdIncludingDeleted(kakaoUserId)
                 .orElse(null);
         boolean isNewUser = false;
         if (user == null) {
@@ -38,7 +39,10 @@ public class AuthService {
             isNewUser = true;
         }
 
-        validateUserStatus(user);
+        if (user.getStatus() == UserStatus.DELETED) {
+            restoreUser(user);
+            restoreDogIfPresent(user);
+        }
         if (email != null && (user.getKakaoEmail() == null || !email.equals(user.getKakaoEmail()))) {
             user.updateKakaoEmail(email);
         }
@@ -57,10 +61,16 @@ public class AuthService {
         );
     }
 
-    private void validateUserStatus(User user) {
-        if (user.getStatus() == UserStatus.DELETED) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
+    private void restoreUser(User user) {
+        user.restore();
+    }
+
+    private void restoreDogIfPresent(User user) {
+        Dog dog = dogRepository.findByUserIdIncludingDeleted(user.getId()).orElse(null);
+        if (dog == null) {
+            return;
         }
+        dog.restore();
     }
 
     public record LoginResult(User user, boolean isNewUser) {}

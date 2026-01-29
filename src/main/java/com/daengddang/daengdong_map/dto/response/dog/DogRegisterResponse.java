@@ -13,7 +13,7 @@ public class DogRegisterResponse {
         this.dogKey = dogKey;
     }
 
-    public static DogRegisterResponse of(Long dogId, String dogKey) {
+    public static DogRegisterResponse from(Long dogId, String dogKey) {
         return new DogRegisterResponse(dogId, dogKey);
     }
 }

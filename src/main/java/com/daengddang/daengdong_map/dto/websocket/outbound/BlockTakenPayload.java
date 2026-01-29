@@ -26,7 +26,7 @@ public class BlockTakenPayload {
         this.takenAt = takenAt;
     }
 
-    public static BlockTakenPayload of(String blockId, Long previousDogId, Long newDogId, LocalDateTime takenAt) {
+    public static BlockTakenPayload from(String blockId, Long previousDogId, Long newDogId, LocalDateTime takenAt) {
         return new BlockTakenPayload(blockId, previousDogId, newDogId, takenAt);
     }
 }

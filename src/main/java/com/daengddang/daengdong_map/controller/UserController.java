@@ -13,6 +13,7 @@ import com.daengddang.daengdong_map.dto.response.dog.DogResponse;
 import com.daengddang.daengdong_map.dto.response.user.RegionListResponse;
 import com.daengddang.daengdong_map.dto.response.user.UserInfoResponse;
 import com.daengddang.daengdong_map.dto.response.user.UserRegisterResponse;
+import com.daengddang.daengdong_map.dto.response.user.UserSummaryResponse;
 import com.daengddang.daengdong_map.security.AuthUser;
 import com.daengddang.daengdong_map.service.DogService;
 import com.daengddang.daengdong_map.service.RegionService;
@@ -34,28 +35,36 @@ public class UserController {
     @PostMapping
     public ApiResponse<UserRegisterResponse> registerUserInfo(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody UserRegisterRequest request
+            @Valid @RequestBody UserRegisterRequest dto
     ) {
         if (authUser == null) {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
         return ApiResponse.success(
                 SuccessCode.USER_INFO_REGISTERED,
-                userService.registerUserInfo(authUser.getUserId(), request)
+                userService.registerUserInfo(authUser.getUserId(), dto)
         );
+    }
+
+    @GetMapping
+    public ApiResponse<UserSummaryResponse> getUserSummary(
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        UserSummaryResponse response = userService.getMyPageSummary(authUser.getUserId());
+        return ApiResponse.success(SuccessCode.MY_PAGE_SUMMARY_RETRIEVED, response);
     }
 
     @PatchMapping
     public ApiResponse<UserInfoResponse> updateUserInfo(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody UserUpdateRequest request
+            @Valid @RequestBody UserUpdateRequest dto
     ) {
         if (authUser == null) {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
         return ApiResponse.success(
                 SuccessCode.USER_INFO_UPDATED,
-                userService.updateUserInfo(authUser.getUserId(), request)
+                userService.updateUserInfo(authUser.getUserId(), dto)
         );
     }
 
@@ -78,17 +87,27 @@ public class UserController {
         return ApiResponse.success(SuccessCode.USER_INFO_RETRIEVED, userService.getUserInfo(authUser.getUserId()));
     }
 
+    @DeleteMapping
+    public ApiResponse<Void> withdrawUser(@AuthenticationPrincipal AuthUser authUser) {
+        if (authUser == null) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED);
+        }
+
+        userService.withdrawUser(authUser.getUserId());
+        return ApiResponse.success(SuccessCode.USER_DELETED);
+    }
+
     @PostMapping("/dogs")
     public ApiResponse<DogRegisterResponse> registerDog(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody DogRegisterRequest request
+            @Valid @RequestBody DogRegisterRequest dto
     ) {
         if (authUser == null) {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
         return ApiResponse.success(
                 SuccessCode.DOG_REGISTERED,
-                dogService.registerDog(authUser.getUserId(), request)
+                dogService.registerDog(authUser.getUserId(), dto)
         );
     }
 
@@ -104,7 +123,7 @@ public class UserController {
     @PatchMapping("/dogs")
     public ApiResponse<DogResponse> updateDogInfo(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody DogUpdateRequest request
+            @Valid @RequestBody DogUpdateRequest dto
     ) {
         if (authUser == null) {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
@@ -112,7 +131,7 @@ public class UserController {
 
         return ApiResponse.success(
                 SuccessCode.DOG_INFO_UPDATED,
-                dogService.updateDogInfo(authUser.getUserId(), request)
+                dogService.updateDogInfo(authUser.getUserId(), dto)
         );
     }
 }

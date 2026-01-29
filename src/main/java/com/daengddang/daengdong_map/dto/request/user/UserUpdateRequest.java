@@ -8,4 +8,6 @@ public class UserUpdateRequest {
 
     @NotNull
     private Long regionId;
+
+
 }

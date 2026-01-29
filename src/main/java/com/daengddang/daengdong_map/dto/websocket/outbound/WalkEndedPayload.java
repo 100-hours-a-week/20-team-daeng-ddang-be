@@ -20,7 +20,7 @@ public class WalkEndedPayload {
         this.endedAt = endedAt;
     }
 
-    public static WalkEndedPayload of(Long walkId, LocalDateTime endedAt) {
+    public static WalkEndedPayload from(Long walkId, LocalDateTime endedAt) {
         return new WalkEndedPayload(walkId, endedAt);
     }
 }

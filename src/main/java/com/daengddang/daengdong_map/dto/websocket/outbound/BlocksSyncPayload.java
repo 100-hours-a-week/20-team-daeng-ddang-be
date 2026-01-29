@@ -18,7 +18,7 @@ public class BlocksSyncPayload {
         this.blocks = blocks;
     }
 
-    public static BlocksSyncPayload of(List<BlockSyncEntry> blocks) {
+    public static BlocksSyncPayload from(List<BlockSyncEntry> blocks) {
         return new BlocksSyncPayload(blocks);
     }
 }

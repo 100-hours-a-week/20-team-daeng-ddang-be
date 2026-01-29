@@ -23,8 +23,8 @@ public class WebSocketMessage<T> {
         this.message = message;
     }
 
-    public static <T> WebSocketMessage<T> of(WebSocketEventType type, T data) {
-        return new WebSocketMessage<>(type, data, null);
+    public static <T> WebSocketMessage<T> from(WebSocketEventType type, T data) {
+        return new WebSocketMessage<>(type, data, type.getMessage());
     }
 
     public static WebSocketMessage<Void> error(String message) {
