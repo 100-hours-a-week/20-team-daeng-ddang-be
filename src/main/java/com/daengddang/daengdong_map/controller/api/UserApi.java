@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.controller.api;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.docs.ErrorCodes;
+import com.daengddang.daengdong_map.common.api.ErrorCodes;
 import com.daengddang.daengdong_map.dto.request.dog.DogRegisterRequest;
 import com.daengddang.daengdong_map.dto.request.dog.DogUpdateRequest;
 import com.daengddang.daengdong_map.dto.request.user.UserRegisterRequest;

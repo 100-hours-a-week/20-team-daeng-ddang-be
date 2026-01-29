@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.controller.api;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.docs.ErrorCodes;
+import com.daengddang.daengdong_map.common.api.ErrorCodes;
 import com.daengddang.daengdong_map.dto.request.mission.MissionUploadRequest;
 import com.daengddang.daengdong_map.dto.response.mission.MissionJudgeResponse;
 import com.daengddang.daengdong_map.dto.response.mission.MissionUploadListResponse;

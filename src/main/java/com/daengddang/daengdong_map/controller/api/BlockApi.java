@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.controller.api;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.docs.ErrorCodes;
+import com.daengddang.daengdong_map.common.api.ErrorCodes;
 import com.daengddang.daengdong_map.dto.response.block.NearbyBlockListResponse;
 import com.daengddang.daengdong_map.security.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;

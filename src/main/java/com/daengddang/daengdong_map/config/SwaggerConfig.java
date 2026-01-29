@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.config;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
-import com.daengddang.daengdong_map.common.docs.ErrorCodes;
+import com.daengddang.daengdong_map.common.api.ErrorCodes;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.info.Info;
