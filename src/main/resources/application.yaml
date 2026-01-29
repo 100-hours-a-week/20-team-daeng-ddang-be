@@ -26,8 +26,10 @@ spring:
 springdoc:
   api-docs:
     path: /api/v3/api-docs
+    enabled: false
   swagger-ui:
     path: /api/swagger-ui.html
+    enabled: false
 
 jwt:
   secret: ${JWT_SECRET}
