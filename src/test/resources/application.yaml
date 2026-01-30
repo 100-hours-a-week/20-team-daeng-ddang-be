@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:daengdong_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret: test-jwt-secret-key-should-be-at-least-32-bytes
+  access-token-expire-minutes: 30
+  refresh-token-expire-days: 14
+
+oauth:
+  kakao:
+    client-id: test-client-id
+    client-secret: test-client-secret
+    redirect-uri: http://localhost/test
+    scope: account_email
+    authorize-uri: https://kauth.kakao.com/oauth/authorize
+    token-uri: https://kauth.kakao.com/oauth/token
+    user-info-uri: https://kapi.kakao.com/v2/user/me
+
+websocket:
+  endpoint: /ws
+  allowed-origins: "*"
+
+aws:
+  credentials:
+    access-key: test-access-key
+    secret-key: test-secret-key
+  s3:
+    bucket: test-bucket
+  region: us-east-1
+
+ai:
+  fastapi:
+    mission-judge-uri: http://localhost:8000
+    expression-analyze-uri: http://localhost:8000

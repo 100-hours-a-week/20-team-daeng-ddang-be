@@ -10,6 +10,7 @@ public enum SuccessCode {
     TOKEN_REFRESHED("토큰이 갱신되었습니다."),
     LOGOUT_SUCCESS("로그아웃 되었습니다."),
     AUTHORIZATION_CODE_DELIVERED("인가 코드가 전달되었습니다."),
+    DEV_USERS_SEEDED("개발용 더미 유저 생성에 성공했습니다."),
 
     USER_INFO_REGISTERED("사용자 정보 등록에 성공했습니다."),
     USER_INFO_UPDATED("사용자 정보 수정에 성공했습니다."),
