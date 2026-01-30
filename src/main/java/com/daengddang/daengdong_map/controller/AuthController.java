@@ -15,13 +15,14 @@ import com.daengddang.daengdong_map.security.oauth.kakao.KakaoOAuthProperties;
 import com.daengddang.daengdong_map.service.AuthService;
 import com.daengddang.daengdong_map.service.AuthTokenService;
 import com.daengddang.daengdong_map.service.KakaoOAuthService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -148,19 +149,25 @@ public class AuthController implements AuthApi {
     /* ================= Cookie ================= */
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24 * 14);
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(60 * 60 * 24 * 14)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void clearRefreshTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private Long extractUserId(String authorizationHeader) {
