@@ -18,11 +18,13 @@ public interface S3Api {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "INVALID_FORMAT"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "415", description = "FILE_TYPE_UNSUPPORTED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
     })
     @ErrorCodes({
             com.daengddang.daengdong_map.common.ErrorCode.INVALID_FORMAT,
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.FILE_TYPE_UNSUPPORTED
     })
     ApiResponse<PresignedUrlResponse> issuePresignedUrl(

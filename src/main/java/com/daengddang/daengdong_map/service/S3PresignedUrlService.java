@@ -5,7 +5,7 @@ import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.s3.FileType;
 import com.daengddang.daengdong_map.dto.request.s3.PresignedUrlRequest;
 import com.daengddang.daengdong_map.dto.response.s3.PresignedUrlResponse;
-import com.daengddang.daengdong_map.repository.UserRepository;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -29,7 +29,7 @@ public class S3PresignedUrlService {
             DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     private final S3Presigner s3Presigner;
-    private final UserRepository userRepository;
+    private final AccessValidator accessValidator;
 
     @Value("${aws.s3.bucket}")
     private String bucket;
@@ -40,8 +40,7 @@ public class S3PresignedUrlService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        accessValidator.getUserOrThrow(userId);
 
         String contentType = dto.getContentType().trim();
         validateContentType(dto.getFileType(), contentType);

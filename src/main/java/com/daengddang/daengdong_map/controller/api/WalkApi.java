@@ -42,6 +42,7 @@ public interface WalkApi {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "INVALID_FORMAT, INVALID_WALK_METRICS"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "WALK_ALREADY_ENDED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
@@ -49,6 +50,7 @@ public interface WalkApi {
     @ErrorCodes({
             com.daengddang.daengdong_map.common.ErrorCode.INVALID_FORMAT,
             com.daengddang.daengdong_map.common.ErrorCode.INVALID_WALK_METRICS,
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND,
             com.daengddang.daengdong_map.common.ErrorCode.WALK_ALREADY_ENDED
     })
@@ -61,10 +63,12 @@ public interface WalkApi {
     @Operation(summary = "Get occupied blocks in a walk")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
     })
     @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
     })
     ApiResponse<OccupiedBlockListResponse> getOccupiedBlocks(
@@ -75,10 +79,12 @@ public interface WalkApi {
     @Operation(summary = "Create walk diary")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "WALK_RECORD_NOT_FOUND"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
     })
     @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.WALK_RECORD_NOT_FOUND
     })
     ApiResponse<WalkDiariesCreateResponse> writeWalkDiary(

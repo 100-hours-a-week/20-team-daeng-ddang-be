@@ -5,16 +5,13 @@ import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.domain.expression.Expression;
-import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.domain.walk.Walk;
 import com.daengddang.daengdong_map.dto.request.expression.ExpressionAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.request.expression.FastApiExpressionAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.response.expression.ExpressionAnalyzeResponse;
 import com.daengddang.daengdong_map.dto.response.expression.FastApiExpressionAnalyzeResponse;
-import com.daengddang.daengdong_map.repository.DogRepository;
 import com.daengddang.daengdong_map.repository.ExpressionRepository;
-import com.daengddang.daengdong_map.repository.UserRepository;
-import com.daengddang.daengdong_map.repository.WalkRepository;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ExpressionAnalyzeService {
 
-    private final UserRepository userRepository;
-    private final DogRepository dogRepository;
-    private final WalkRepository walkRepository;
+    private final AccessValidator accessValidator;
     private final ExpressionRepository expressionRepository;
     private final FastApiClient fastApiClient;
 
@@ -39,14 +34,8 @@ public class ExpressionAnalyzeService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        Walk walk = walkRepository.findByIdAndDog(walkId, dog)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
+        Dog dog = walk.getDog();
 
         String analysisId = UUID.randomUUID().toString();
         FastApiExpressionAnalyzeRequest fastApiRequest =

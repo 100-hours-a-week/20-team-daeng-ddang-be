@@ -11,7 +11,7 @@ import com.daengddang.daengdong_map.dto.response.dog.DogRegisterResponse;
 import com.daengddang.daengdong_map.dto.response.dog.DogResponse;
 import com.daengddang.daengdong_map.repository.BreedRepository;
 import com.daengddang.daengdong_map.repository.DogRepository;
-import com.daengddang.daengdong_map.repository.UserRepository;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,14 +21,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class DogService {
 
     private final DogRepository dogRepository;
-    private final UserRepository userRepository;
     private final BreedRepository breedRepository;
+    private final AccessValidator accessValidator;
 
     @Transactional
     public DogRegisterResponse registerDog(Long userId, DogRegisterRequest dto) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        User user = accessValidator.getUserOrThrow(userId);
 
         Long breedId = dto.getBreedId();
 
@@ -44,11 +43,7 @@ public class DogService {
 
     @Transactional
     public DogResponse getDogInfo(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new BaseException(ErrorCode.UNAUTHORIZED)
-        );
-
-        Dog dog = dogRepository.findByUser(user).orElse(null);
+        Dog dog = dogRepository.findByUser(accessValidator.getUserOrThrow(userId)).orElse(null);
 
         if (dog == null) {
             return null;
@@ -63,11 +58,7 @@ public class DogService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        Dog dog = accessValidator.getDogOrThrow(userId);
 
         Breed breed = breedRepository.findById(dto.getBreedId())
                 .orElseThrow(() -> new BaseException(ErrorCode.DOG_BREED_NOT_FOUND));

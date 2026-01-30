@@ -18,6 +18,7 @@ import com.daengddang.daengdong_map.repository.RegionRepository;
 import com.daengddang.daengdong_map.repository.UserRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
 import com.daengddang.daengdong_map.repository.WalkSummary;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ public class UserService {
     private final DogRepository dogRepository;
     private final WalkRepository walkRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AccessValidator accessValidator;
 
     @Transactional
     public UserRegisterResponse registerUserInfo(Long userId, UserRegisterRequest dto) {
@@ -38,8 +40,7 @@ public class UserService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        User user = accessValidator.getUserOrThrow(userId);
 
         Region region = regionRepository.findByIdAndStatus(dto.getRegionId(), RegionStatus.ACTIVE)
                 .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
@@ -51,8 +52,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserInfoResponse getUserInfo(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        User user = accessValidator.getUserOrThrow(userId);
 
         return UserInfoResponse.from(user);
     }
@@ -63,8 +63,7 @@ public class UserService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        User user = accessValidator.getUserOrThrow(userId);
         Region region = regionRepository.findByIdAndStatus(request.getRegionId(), RegionStatus.ACTIVE)
                 .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
 
@@ -102,8 +101,7 @@ public class UserService {
 
     @Transactional
     public void withdrawUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        User user = accessValidator.getUserOrThrow(userId);
 
         Dog dog = dogRepository.findByUser(user).orElse(null);
         if (dog != null) {

@@ -6,7 +6,6 @@ import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.block.Block;
 import com.daengddang.daengdong_map.domain.block.BlockOwnership;
 import com.daengddang.daengdong_map.domain.dog.Dog;
-import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.domain.walk.Walk;
 import com.daengddang.daengdong_map.domain.walk.WalkPoint;
 import com.daengddang.daengdong_map.domain.walk.WalkStatus;
@@ -17,8 +16,7 @@ import com.daengddang.daengdong_map.dto.response.walk.OccupiedBlockResponse;
 import com.daengddang.daengdong_map.dto.response.walk.WalkEndResponse;
 import com.daengddang.daengdong_map.dto.response.walk.WalkStartResponse;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
-import com.daengddang.daengdong_map.repository.DogRepository;
-import com.daengddang.daengdong_map.repository.UserRepository;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import com.daengddang.daengdong_map.repository.WalkPointRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
 import java.time.LocalDateTime;
@@ -33,11 +31,10 @@ public class WalkService {
 
     private static final double KM_TO_METER = 1000.0;
 
-    private final UserRepository userRepository;
-    private final DogRepository dogRepository;
     private final WalkRepository walkRepository;
     private final WalkPointRepository walkPointRepository;
     private final BlockOwnershipRepository blockOwnershipRepository;
+    private final AccessValidator accessValidator;
 
     @Transactional
     public WalkStartResponse startWalk(Long userId, WalkStartRequest dto) {
@@ -46,11 +43,7 @@ public class WalkService {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        Dog dog = accessValidator.getDogOrThrow(userId);
 
         if (walkRepository.existsByDogAndStatus(dog, WalkStatus.IN_PROGRESS)) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
@@ -70,39 +63,33 @@ public class WalkService {
     }
 
     @Transactional
-    public WalkEndResponse endWalk(Long userId, Long walkId, WalkEndRequest request) {
+    public WalkEndResponse endWalk(Long userId, Long walkId, WalkEndRequest dto) {
 
-        if (request == null) {
+        if (dto == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        Walk walk = walkRepository.findByIdAndDog(walkId, dog)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
+        Dog dog = walk.getDog();
 
         if (walk.getStatus() == WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.WALK_ALREADY_ENDED);
         }
 
-        if (request.getStatus() != WalkStatus.FINISHED) {
+        if (dto.getStatus() != WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
 
-        if (request.getTotalDistanceKm() < 0 || request.getDurationSeconds() < 0) {
+        if (dto.getTotalDistanceKm() < 0 || dto.getDurationSeconds() < 0) {
             throw new BaseException(ErrorCode.INVALID_WALK_METRICS);
         }
 
         LocalDateTime now = LocalDateTime.now();
-        double distanceMeters = request.getTotalDistanceKm() * KM_TO_METER;
+        double distanceMeters = dto.getTotalDistanceKm() * KM_TO_METER;
 
-        walk.finish(now, distanceMeters, request.getDurationSeconds());
+        walk.finish(now, distanceMeters, dto.getDurationSeconds());
 
-        WalkPoint endPoint = WalkEndRequest.of(request, walk, now);
+        WalkPoint endPoint = WalkEndRequest.of(dto, walk, now);
         walkPointRepository.save(endPoint);
 
         int occupiedBlockCount = blockOwnershipRepository.findAllByDog(dog).size();
@@ -111,8 +98,8 @@ public class WalkService {
                 walk.getId(),
                 walk.getStartedAt(),
                 walk.getEndedAt(),
-                request.getTotalDistanceKm(),
-                request.getDurationSeconds(),
+                dto.getTotalDistanceKm(),
+                dto.getDurationSeconds(),
                 occupiedBlockCount,
                 walk.getStatus()
         );
@@ -120,16 +107,9 @@ public class WalkService {
 
     @Transactional(readOnly = true)
     public OccupiedBlockListResponse getOccupiedBlocks(Long userId, Long walkId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
 
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        walkRepository.findByIdAndDog(walkId, dog)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        List<OccupiedBlockResponse> blocks = blockOwnershipRepository.findAllByDog(dog).stream()
+        List<OccupiedBlockResponse> blocks = blockOwnershipRepository.findAllByDog(walk.getDog()).stream()
                 .map(this::toOccupiedBlock)
                 .toList();
 

@@ -7,8 +7,6 @@ import com.daengddang.daengdong_map.domain.mission.Mission;
 import com.daengddang.daengdong_map.domain.mission.MissionRecord;
 import com.daengddang.daengdong_map.domain.mission.MissionRecordStatus;
 import com.daengddang.daengdong_map.domain.mission.MissionUpload;
-import com.daengddang.daengdong_map.domain.dog.Dog;
-import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.domain.walk.Walk;
 import com.daengddang.daengdong_map.domain.walk.WalkStatus;
 import com.daengddang.daengdong_map.dto.request.mission.FastApiMissionJudgeRequest;
@@ -18,9 +16,7 @@ import com.daengddang.daengdong_map.util.MissionJudgeMapper;
 import com.daengddang.daengdong_map.repository.MissionRepository;
 import com.daengddang.daengdong_map.repository.MissionRecordRepository;
 import com.daengddang.daengdong_map.repository.MissionUploadRepository;
-import com.daengddang.daengdong_map.repository.DogRepository;
-import com.daengddang.daengdong_map.repository.UserRepository;
-import com.daengddang.daengdong_map.repository.WalkRepository;
+import com.daengddang.daengdong_map.util.AccessValidator;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MissionJudgeService {
 
-    private final UserRepository userRepository;
-    private final DogRepository dogRepository;
-    private final WalkRepository walkRepository;
+    private final AccessValidator accessValidator;
     private final MissionRepository missionRepository;
     private final MissionRecordRepository missionRecordRepository;
     private final MissionUploadRepository missionUploadRepository;
@@ -47,14 +41,7 @@ public class MissionJudgeService {
 
     @Transactional
     public MissionJudgeResponse judge(Long userId, Long walkId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BaseException(ErrorCode.UNAUTHORIZED));
-
-        Dog dog = dogRepository.findByUser(user)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        Walk walk = walkRepository.findByIdAndDog(walkId, dog)
-                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
 
         if (walk.getStatus() != WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
