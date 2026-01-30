@@ -16,7 +16,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(List.of("*")); // allowCredentials(true)와 함께 사용
+        config.setAllowedOriginPatterns(List.of("https://daeng-map.store", "http://localhost:3000", "https://dev.daeng-map.store"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setMaxAge(10 * 60L);
         config.setAllowCredentials(true);

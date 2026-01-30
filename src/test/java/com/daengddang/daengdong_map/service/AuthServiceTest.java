@@ -1,14 +1,13 @@
 package com.daengddang.daengdong_map.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.daengddang.daengdong_map.common.ErrorCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
+import com.daengddang.daengdong_map.domain.dog.Dog;
+import com.daengddang.daengdong_map.repository.DogRepository;
 import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.domain.user.UserStatus;
 import com.daengddang.daengdong_map.repository.UserRepository;
@@ -19,12 +18,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private DogRepository dogRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -33,7 +36,7 @@ class AuthServiceTest {
     void loginOrRegister_createsUser_whenNotFound() {
         KakaoOAuthUser oauthUser = new KakaoOAuthUser(123L, "user@example.com");
 
-        when(userRepository.findByKakaoUserId(123L)).thenReturn(Optional.empty());
+        when(userRepository.findByKakaoUserIdIncludingDeleted(123L)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthService.LoginResult result = authService.loginOrRegister(oauthUser);
@@ -52,7 +55,7 @@ class AuthServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
 
-        when(userRepository.findByKakaoUserId(123L)).thenReturn(Optional.of(user));
+        when(userRepository.findByKakaoUserIdIncludingDeleted(123L)).thenReturn(Optional.of(user));
 
         AuthService.LoginResult result = authService.loginOrRegister(new KakaoOAuthUser(123L, null));
 
@@ -62,17 +65,19 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginOrRegister_throws_whenUserDeleted() {
+    void loginOrRegister_restoresUser_whenUserDeleted() {
         User user = User.builder()
                 .kakaoUserId(123L)
                 .status(UserStatus.DELETED)
                 .build();
+        ReflectionTestUtils.setField(user, "id", 1L);
 
-        when(userRepository.findByKakaoUserId(123L)).thenReturn(Optional.of(user));
+        when(userRepository.findByKakaoUserIdIncludingDeleted(123L)).thenReturn(Optional.of(user));
+        when(dogRepository.findByUserIdIncludingDeleted(1L)).thenReturn(Optional.of(Dog.builder().build()));
 
-        assertThatThrownBy(() -> authService.loginOrRegister(new KakaoOAuthUser(123L, null)))
-                .isInstanceOf(BaseException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.UNAUTHORIZED);
+        AuthService.LoginResult result = authService.loginOrRegister(new KakaoOAuthUser(123L, null));
+
+        assertThat(result.isNewUser()).isFalse();
+        assertThat(result.user().getStatus()).isEqualTo(UserStatus.ACTIVE);
     }
 }
