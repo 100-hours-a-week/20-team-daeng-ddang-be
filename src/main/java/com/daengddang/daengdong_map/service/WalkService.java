@@ -17,6 +17,7 @@ import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
 import com.daengddang.daengdong_map.repository.WalkBlockLogRepository;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import com.daengddang.daengdong_map.util.BlockOwnershipMapper;
+import com.daengddang.daengdong_map.util.WalkRuntimeStateRegistry;
 import com.daengddang.daengdong_map.util.WalkMetricsValidator;
 import com.daengddang.daengdong_map.repository.WalkPointRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
@@ -37,6 +38,7 @@ public class WalkService {
     private final BlockOwnershipRepository blockOwnershipRepository;
     private final WalkBlockLogRepository walkBlockLogRepository;
     private final AccessValidator accessValidator;
+    private final WalkRuntimeStateRegistry stateRegistry;
 
     @Transactional
     public WalkStartResponse startWalk(Long userId, WalkStartRequest dto) {
@@ -101,6 +103,8 @@ public class WalkService {
         if (Boolean.TRUE.equals(dto.getIsValidated())) {
             removeBlocksAcquiredInWalk(walk.getId());
         }
+
+        stateRegistry.clear(walk.getId());
 
         int occupiedBlockCount = Math.toIntExact(blockOwnershipRepository.countByDog(dog));
 
