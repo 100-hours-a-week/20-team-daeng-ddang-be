@@ -7,6 +7,7 @@ import com.daengddang.daengdong_map.dto.websocket.outbound.BlockSyncEntry;
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlocksSyncPayload;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
 import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
+import com.daengddang.daengdong_map.websocket.RedisWebSocketBroadcaster;
 import com.daengddang.daengdong_map.websocket.WebSocketDestinations;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,7 +16,6 @@ import com.daengddang.daengdong_map.util.AfterCommitExecutor;
 import com.daengddang.daengdong_map.util.WalkRuntimeStateRegistry;
 import com.daengddang.daengdong_map.util.WalkRuntimeStateRegistry.SyncState;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,7 +26,7 @@ public class BlockSyncService {
     private static final long SYNC_MIN_INTERVAL_SECONDS = 2;
 
     private final BlockOwnershipRepository blockOwnershipRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RedisWebSocketBroadcaster broadcaster;
     private final WalkRuntimeStateRegistry stateRegistry;
     private final AfterCommitExecutor afterCommitExecutor;
 
@@ -50,6 +50,7 @@ public class BlockSyncService {
         }
 
         state.recordLastSyncedAt(now);
+        stateRegistry.putSyncState(walkId, state);
         sendBlocksSync(blockX, blockY, areaKey);
     }
 
@@ -74,7 +75,7 @@ public class BlockSyncService {
                 new WebSocketMessage<>(WebSocketEventType.BLOCKS_SYNC, payload,
                         WebSocketEventType.BLOCKS_SYNC.getMessage());
         afterCommitExecutor.sendAfterCommit(() ->
-                messagingTemplate.convertAndSend(WebSocketDestinations.blocks(areaKey), message));
+                broadcaster.broadcast(WebSocketDestinations.blocks(areaKey), message));
     }
 
     private AreaRange toAreaRange(int blockX, int blockY) {
@@ -92,17 +93,6 @@ public class BlockSyncService {
         );
     }
 
-    private static class AreaRange {
-        private final int minX;
-        private final int maxX;
-        private final int minY;
-        private final int maxY;
-
-        private AreaRange(int minX, int maxX, int minY, int maxY) {
-            this.minX = minX;
-            this.maxX = maxX;
-            this.minY = minY;
-            this.maxY = maxY;
-        }
+    private record AreaRange(int minX, int maxX, int minY, int maxY) {
     }
 }

@@ -8,22 +8,22 @@ import com.daengddang.daengdong_map.dto.websocket.outbound.BlockOccupyFailedPayl
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlockTakenPayload;
 import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.service.BlockSyncService;
+import com.daengddang.daengdong_map.websocket.RedisWebSocketBroadcaster;
 import com.daengddang.daengdong_map.websocket.WebSocketDestinations;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class WalkEventPublisher {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RedisWebSocketBroadcaster broadcaster;
     private final BlockSyncService blockSyncService;
     private final AfterCommitExecutor afterCommitExecutor;
 
     public void sendError(Long walkId, String message) {
-        messagingTemplate.convertAndSend(WebSocketDestinations.walk(walkId), WebSocketMessage.error(message));
+        broadcaster.broadcast(WebSocketDestinations.walk(walkId), WebSocketMessage.error(message));
     }
 
     public void sendOccupyFailed(Long walkId, int blockX, int blockY, String areaKey, LocalDateTime timestamp) {
@@ -34,7 +34,7 @@ public class WalkEventPublisher {
                 new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPY_FAILED, failPayload,
                         WebSocketEventType.BLOCK_OCCUPY_FAILED.getMessage());
 
-        messagingTemplate.convertAndSend(WebSocketDestinations.walk(walkId), message);
+        broadcaster.broadcast(WebSocketDestinations.walk(walkId), message);
         blockSyncService.syncBlocksOnAreaChange(walkId, blockX, blockY, areaKey, timestamp);
     }
 
@@ -44,8 +44,8 @@ public class WalkEventPublisher {
                 new WebSocketMessage<>(WebSocketEventType.BLOCK_OCCUPIED, payload,
                         WebSocketEventType.BLOCK_OCCUPIED.getMessage());
         afterCommitExecutor.sendAfterCommit(() -> {
-            messagingTemplate.convertAndSend(WebSocketDestinations.walk(walkId), message);
-            messagingTemplate.convertAndSend(WebSocketDestinations.blocks(areaKey), message);
+            broadcaster.broadcast(WebSocketDestinations.walk(walkId), message);
+            broadcaster.broadcast(WebSocketDestinations.blocks(areaKey), message);
         });
     }
 
@@ -56,8 +56,8 @@ public class WalkEventPublisher {
                 new WebSocketMessage<>(WebSocketEventType.BLOCK_TAKEN, payload,
                         WebSocketEventType.BLOCK_TAKEN.getMessage());
         afterCommitExecutor.sendAfterCommit(() -> {
-            messagingTemplate.convertAndSend(WebSocketDestinations.walk(walkId), message);
-            messagingTemplate.convertAndSend(WebSocketDestinations.blocks(areaKey), message);
+            broadcaster.broadcast(WebSocketDestinations.walk(walkId), message);
+            broadcaster.broadcast(WebSocketDestinations.blocks(areaKey), message);
         });
     }
 
