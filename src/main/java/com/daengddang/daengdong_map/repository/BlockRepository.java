@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface BlockRepository extends JpaRepository<Block, Long> {
+public interface BlockRepository extends JpaRepository<Block, Long>, BlockNativeRepository {
 
     Optional<Block> findByXAndY(Integer x, Integer y);
 

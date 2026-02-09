@@ -2,10 +2,10 @@ package com.daengddang.daengdong_map.service;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
-import com.daengddang.daengdong_map.domain.block.BlockOwnership;
 import com.daengddang.daengdong_map.dto.response.block.NearbyBlockListResponse;
 import com.daengddang.daengdong_map.dto.response.block.NearbyBlockResponse;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
+import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import com.daengddang.daengdong_map.util.BlockIdUtil;
 import com.daengddang.daengdong_map.util.BlockOwnershipMapper;
 import com.daengddang.daengdong_map.util.CoordinateValidator;
@@ -51,7 +51,7 @@ public class BlockService {
         return (int) Math.ceil(radiusMeters / BLOCK_METERS);
     }
 
-    private NearbyBlockResponse toNearbyBlock(BlockOwnership ownership) {
+    private NearbyBlockResponse toNearbyBlock(BlockOwnershipView ownership) {
         String blockId = BlockOwnershipMapper.toBlockId(ownership);
         return NearbyBlockResponse.from(
                 blockId,

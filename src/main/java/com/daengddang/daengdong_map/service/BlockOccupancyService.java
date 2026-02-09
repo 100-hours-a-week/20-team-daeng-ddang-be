@@ -26,12 +26,10 @@ public class BlockOccupancyService {
     public BlockOccupancyResult occupy(Walk walk, int blockX, int blockY, LocalDateTime timestamp) {
         Dog dog = walk.getDog();
 
-        blockRepository.insertIfNotExists(blockX, blockY);
-        Block block = blockRepository.findByXAndY(blockX, blockY)
-                .orElseThrow();
-
-        BlockOwnership ownership = blockOwnershipRepository.findById(block.getId()).orElse(null);
+        Long blockId = blockRepository.insertIfNotExistsReturningId(blockX, blockY);
+        BlockOwnership ownership = blockOwnershipRepository.findById(blockId).orElse(null);
         if (ownership == null) {
+            Block block = blockRepository.getReferenceById(blockId);
             BlockOwnership newOwnership = BlockOwnership.builder()
                     .block(block)
                     .dog(dog)
@@ -39,7 +37,7 @@ public class BlockOccupancyService {
                     .lastPassedAt(timestamp)
                     .build();
             blockOwnershipRepository.save(newOwnership);
-            walkBlockLogRepository.insertIfNotExists(walk.getId(), block.getId(), dog.getId(), null, timestamp);
+            walkBlockLogRepository.insertIfNotExists(walk.getId(), blockId, dog.getId(), null, timestamp);
             return BlockOccupancyResult.occupied();
         }
 
@@ -50,7 +48,7 @@ public class BlockOccupancyService {
 
         Long previousDogId = ownership.getDog().getId();
         ownership.updateOwner(dog, timestamp);
-        walkBlockLogRepository.insertIfNotExists(walk.getId(), block.getId(), dog.getId(), previousDogId, timestamp);
+        walkBlockLogRepository.insertIfNotExists(walk.getId(), blockId, dog.getId(), previousDogId, timestamp);
         return BlockOccupancyResult.taken(previousDogId);
     }
 }

@@ -1,7 +1,6 @@
 package com.daengddang.daengdong_map.util;
 
-import com.daengddang.daengdong_map.domain.block.Block;
-import com.daengddang.daengdong_map.domain.block.BlockOwnership;
+import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import java.time.LocalDateTime;
 
 public final class BlockOwnershipMapper {
@@ -9,16 +8,15 @@ public final class BlockOwnershipMapper {
     private BlockOwnershipMapper() {
     }
 
-    public static String toBlockId(BlockOwnership ownership) {
-        Block block = ownership.getBlock();
-        return BlockIdUtil.toBlockId(block.getX(), block.getY());
+    public static String toBlockId(BlockOwnershipView ownership) {
+        return BlockIdUtil.toBlockId(ownership.getBlockX(), ownership.getBlockY());
     }
 
-    public static Long toOwnerDogId(BlockOwnership ownership) {
-        return ownership.getDog().getId();
+    public static Long toOwnerDogId(BlockOwnershipView ownership) {
+        return ownership.getDogId();
     }
 
-    public static LocalDateTime toAcquiredAt(BlockOwnership ownership) {
+    public static LocalDateTime toAcquiredAt(BlockOwnershipView ownership) {
         return ownership.getAcquiredAt();
     }
 }

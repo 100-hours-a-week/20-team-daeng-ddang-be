@@ -2,6 +2,7 @@ package com.daengddang.daengdong_map.repository;
 
 import com.daengddang.daengdong_map.domain.block.BlockOwnership;
 import com.daengddang.daengdong_map.domain.dog.Dog;
+import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,25 +17,35 @@ public interface BlockOwnershipRepository extends JpaRepository<BlockOwnership, 
     long countByDog(Dog dog);
 
     @Query("""
-            select ownership
+            select
+                ownership.id as blockId,
+                block.x as blockX,
+                block.y as blockY,
+                dog.id as dogId,
+                ownership.acquiredAt as acquiredAt
             from BlockOwnership ownership
-            join fetch ownership.block block
-            join fetch ownership.dog dog
+            join ownership.block block
+            join ownership.dog dog
             where ownership.dog = :dog
             """)
-    List<BlockOwnership> findAllByDogWithBlockAndDog(@Param("dog") Dog dog);
+    List<BlockOwnershipView> findAllByDogWithBlockAndDog(@Param("dog") Dog dog);
 
     List<BlockOwnership> findAllByIdIn(Collection<Long> blockIds);
 
     @Query("""
-            select ownership
-            from BlockOwnership ownership
-            join fetch ownership.block block
-            join fetch ownership.dog dog
-            where block.x between :minX and :maxX
-              and block.y between :minY and :maxY
+            SELECT
+                ownership.id as blockId,
+                block.x as blockX,
+                block.y as blockY,
+                dog.id as dogId,
+                ownership.acquiredAt as acquiredAt
+            FROM BlockOwnership ownership
+            JOIN ownership.block block
+            JOIN ownership.dog dog
+            WHERE block.x BETWEEN :minX AND :maxX
+              AND block.y BETWEEN :minY AND :maxY
             """)
-    List<BlockOwnership> findAllByBlockRange(
+    List<BlockOwnershipView> findAllByBlockRange(
             @Param("minX") int minX,
             @Param("maxX") int maxX,
             @Param("minY") int minY,

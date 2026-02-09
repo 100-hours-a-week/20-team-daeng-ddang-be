@@ -6,6 +6,7 @@ import com.daengddang.daengdong_map.dto.websocket.common.WebSocketMessage;
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlockSyncEntry;
 import com.daengddang.daengdong_map.dto.websocket.outbound.BlocksSyncPayload;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
+import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import com.daengddang.daengdong_map.websocket.WebSocketDestinations;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -65,10 +66,7 @@ public class BlockSyncService {
         List<BlockSyncEntry> entries = blockOwnershipRepository.findAllByBlockRange(
                         range.minX, range.maxX, range.minY, range.maxY
                 ).stream()
-                .map(ownership -> BlockSyncEntry.from(
-                        BlockIdUtil.toBlockId(ownership.getBlock().getX(), ownership.getBlock().getY()),
-                        ownership.getDog().getId()
-                ))
+                .map(this::toBlockSyncEntry)
                 .toList();
 
         BlocksSyncPayload payload = BlocksSyncPayload.from(entries);
@@ -85,6 +83,13 @@ public class BlockSyncService {
         int minX = areaX * AREA_SIZE;
         int minY = areaY * AREA_SIZE;
         return new AreaRange(minX, minX + AREA_SIZE - 1, minY, minY + AREA_SIZE - 1);
+    }
+
+    private BlockSyncEntry toBlockSyncEntry(BlockOwnershipView ownership) {
+        return BlockSyncEntry.from(
+                BlockIdUtil.toBlockId(ownership.getBlockX(), ownership.getBlockY()),
+                ownership.getDogId()
+        );
     }
 
     private static class AreaRange {
