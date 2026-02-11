@@ -8,5 +8,5 @@ public interface RegionRankView {
 
     String getRegionName();
 
-    Double getDistanceMeters();
+    Double getTotalDistance();
 }

@@ -18,7 +18,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
             where rank.periodType = :periodType
@@ -39,7 +39,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
             where rank.periodType = :periodType
@@ -60,7 +60,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
             where rank.periodType = :periodType
@@ -81,7 +81,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
             where rank.periodType = :periodType

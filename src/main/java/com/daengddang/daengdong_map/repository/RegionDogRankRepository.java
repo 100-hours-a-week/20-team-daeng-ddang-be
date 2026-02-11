@@ -18,7 +18,7 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.dogDistance as dogDistanceMeters,
+                rank.dogDistance as dogDistance,
                 rank.contributionRate as contributionRate
             from RegionDogRank rank
             join rank.dog dog
@@ -40,7 +40,7 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.dogDistance as dogDistanceMeters,
+                rank.dogDistance as dogDistance,
                 rank.contributionRate as contributionRate
             from RegionDogRank rank
             join rank.dog dog
@@ -62,7 +62,7 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.dogDistance as dogDistanceMeters,
+                rank.dogDistance as dogDistance,
                 rank.contributionRate as contributionRate
             from RegionDogRank rank
             join rank.dog dog
@@ -84,7 +84,7 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
                 dog.id as dogId,
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
-                rank.dogDistance as dogDistanceMeters,
+                rank.dogDistance as dogDistance,
                 rank.contributionRate as contributionRate
             from RegionDogRank rank
             join rank.dog dog
