@@ -1,6 +1,6 @@
 package com.daengddang.daengdong_map.repository;
 
-import com.daengddang.daengdong_map.domain.ranking.DogRank;
+import com.daengddang.daengdong_map.domain.ranking.DogGlobalRank;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.repository.projection.DogRankView;
 import java.util.List;
@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface DogRankRepository extends JpaRepository<DogRank, Long> {
+public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Long> {
 
     @Query("""
             select
@@ -20,17 +20,15 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
-            from DogRank rank
+            from DogGlobalRank rank
             join rank.dog dog
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-              and rank.region.id = :regionId
             order by rank.ranking asc
             """)
     List<DogRankView> findRanks(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
-            @Param("regionId") Long regionId,
             Pageable pageable
     );
 
@@ -41,17 +39,15 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
-            from DogRank rank
+            from DogGlobalRank rank
             join rank.dog dog
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-              and rank.region.id = :regionId
               and dog.id = :dogId
             """)
     Optional<DogRankView> findMyRank(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
-            @Param("regionId") Long regionId,
             @Param("dogId") Long dogId
     );
 
@@ -62,11 +58,10 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.name as dogName,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
-            from DogRank rank
+            from DogGlobalRank rank
             join rank.dog dog
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-              and rank.region.id = :regionId
               and (
                 rank.totalDistance < :cursorDistance
                 or (rank.totalDistance = :cursorDistance and dog.id > :cursorDogId)
@@ -76,10 +71,8 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
     Slice<DogRankView> findRanksByCursor(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
-            @Param("regionId") Long regionId,
             @Param("cursorDistance") Double cursorDistance,
             @Param("cursorDogId") Long cursorDogId,
             Pageable pageable
     );
-
 }
