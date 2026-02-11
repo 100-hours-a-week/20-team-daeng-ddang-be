@@ -34,36 +34,36 @@ public class PersonalRankingService {
     private final RegionRepository regionRepository;
     private final AccessValidator accessValidator;
 
-    public PersonalRankingSummaryResponse getPersonalRankingSummary(Long userId, RankingPeriodRegionRequest request) {
-        validateRequest(request);
-        RankingPeriodType periodType = RankingValidator.parsePeriodType(request.getPeriodType());
-        RankingValidator.validatePeriodValue(periodType, request.getPeriodValue());
+    public PersonalRankingSummaryResponse getPersonalRankingSummary(Long userId, RankingPeriodRegionRequest dto) {
+        validateRequest(dto);
+        RankingPeriodType periodType = RankingValidator.parsePeriodType(dto.getPeriodType());
+        RankingValidator.validatePeriodValue(periodType, dto.getPeriodValue());
         Dog dog = accessValidator.getDogOrThrow(userId);
-        Long regionId = request.getRegionId();
+        Long regionId = dto.getRegionId();
 
         List<PersonalRankItemResponse> topRanks;
         PersonalRankItemResponse myRank;
         if (regionId == null) {
             topRanks = dogRankRepository
-                    .findRanksAllRegions(periodType, request.getPeriodValue(), PageRequest.of(0, SUMMARY_TOP_LIMIT))
+                    .findRanksAllRegions(periodType, dto.getPeriodValue(), PageRequest.of(0, SUMMARY_TOP_LIMIT))
                     .stream()
                     .map(this::toPersonalRankItem)
                     .toList();
 
             myRank = dogRankRepository
-                    .findMyRankAllRegions(periodType, request.getPeriodValue(), dog.getId())
+                    .findMyRankAllRegions(periodType, dto.getPeriodValue(), dog.getId())
                     .map(this::toPersonalRankItem)
                     .orElse(null);
         } else {
             validateActiveRegion(regionId);
             topRanks = dogRankRepository
-                    .findRanks(periodType, request.getPeriodValue(), regionId, PageRequest.of(0, SUMMARY_TOP_LIMIT))
+                    .findRanks(periodType, dto.getPeriodValue(), regionId, PageRequest.of(0, SUMMARY_TOP_LIMIT))
                     .stream()
                     .map(this::toPersonalRankItem)
                     .toList();
 
             myRank = dogRankRepository
-                    .findMyRank(periodType, request.getPeriodValue(), regionId, dog.getId())
+                    .findMyRank(periodType, dto.getPeriodValue(), regionId, dog.getId())
                     .map(this::toPersonalRankItem)
                     .orElse(null);
         }
@@ -72,14 +72,14 @@ public class PersonalRankingService {
     }
 
     public PersonalRankingListResponse getPersonalRankingList(Long userId,
-                                                              RankingPeriodRegionRequest request,
+                                                              RankingPeriodRegionRequest dto,
                                                               RankingCursorRequest cursorRequest) {
-        validateRequest(request);
-        RankingPeriodType periodType = RankingValidator.parsePeriodType(request.getPeriodType());
-        RankingValidator.validatePeriodValue(periodType, request.getPeriodValue());
+        validateRequest(dto);
+        RankingPeriodType periodType = RankingValidator.parsePeriodType(dto.getPeriodType());
+        RankingValidator.validatePeriodValue(periodType, dto.getPeriodValue());
         accessValidator.getDogOrThrow(userId);
 
-        Long regionId = request.getRegionId();
+        Long regionId = dto.getRegionId();
         if (regionId != null) {
             validateActiveRegion(regionId);
         }
@@ -92,8 +92,8 @@ public class PersonalRankingService {
         if (isBlank(cursor)) {
             int fetchSize = limit + 1;
             List<DogRankView> fetched = (regionId == null)
-                    ? dogRankRepository.findRanksAllRegions(periodType, request.getPeriodValue(), PageRequest.of(0, fetchSize))
-                    : dogRankRepository.findRanks(periodType, request.getPeriodValue(), regionId, PageRequest.of(0, fetchSize));
+                    ? dogRankRepository.findRanksAllRegions(periodType, dto.getPeriodValue(), PageRequest.of(0, fetchSize))
+                    : dogRankRepository.findRanks(periodType, dto.getPeriodValue(), regionId, PageRequest.of(0, fetchSize));
 
             hasNext = fetched.size() > limit;
             ranks = fetched.stream()
@@ -105,14 +105,14 @@ public class PersonalRankingService {
             Slice<DogRankView> slice = (regionId == null)
                     ? dogRankRepository.findRanksByCursorAllRegions(
                     periodType,
-                    request.getPeriodValue(),
+                    dto.getPeriodValue(),
                     parsedCursor.distance(),
                     parsedCursor.dogId(),
                     PageRequest.of(0, limit)
             )
                     : dogRankRepository.findRanksByCursor(
                     periodType,
-                    request.getPeriodValue(),
+                    dto.getPeriodValue(),
                     regionId,
                     parsedCursor.distance(),
                     parsedCursor.dogId(),

@@ -37,14 +37,14 @@ public class PersonalRankingController implements PersonalRankingApi {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
 
-        RankingPeriodRegionRequest request = RankingPeriodRegionRequest.builder()
+        RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
                 .regionId(regionId)
                 .build();
 
         PersonalRankingSummaryResponse response = personalRankingService
-                .getPersonalRankingSummary(authUser.getUserId(), request);
+                .getPersonalRankingSummary(authUser.getUserId(), dto);
 
         return ApiResponse.success(SuccessCode.PERSONAL_RANKING_SUMMARY_RETRIEVED, response);
     }
@@ -63,7 +63,7 @@ public class PersonalRankingController implements PersonalRankingApi {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
 
-        RankingPeriodRegionRequest request = RankingPeriodRegionRequest.builder()
+        RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
                 .regionId(regionId)
@@ -75,7 +75,7 @@ public class PersonalRankingController implements PersonalRankingApi {
                 .build();
 
         PersonalRankingListResponse response = personalRankingService
-                .getPersonalRankingList(authUser.getUserId(), request, cursorRequest);
+                .getPersonalRankingList(authUser.getUserId(), dto, cursorRequest);
 
         return ApiResponse.success(SuccessCode.PERSONAL_RANKING_LIST_RETRIEVED, response);
     }
