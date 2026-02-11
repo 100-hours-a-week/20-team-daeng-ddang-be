@@ -1,0 +1,78 @@
+package com.daengddang.daengdong_map.repository;
+
+import com.daengddang.daengdong_map.domain.ranking.DogGlobalRank;
+import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
+import com.daengddang.daengdong_map.repository.projection.DogRankView;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Long> {
+
+    @Query("""
+            select
+                rank.ranking as rank,
+                dog.id as dogId,
+                dog.name as dogName,
+                dog.profileImageUrl as profileImageUrl,
+                rank.totalDistance as totalDistance
+            from DogGlobalRank rank
+            join rank.dog dog
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+            order by rank.ranking asc
+            """)
+    List<DogRankView> findRanks(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue,
+            Pageable pageable
+    );
+
+    @Query("""
+            select
+                rank.ranking as rank,
+                dog.id as dogId,
+                dog.name as dogName,
+                dog.profileImageUrl as profileImageUrl,
+                rank.totalDistance as totalDistance
+            from DogGlobalRank rank
+            join rank.dog dog
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+              and dog.id = :dogId
+            """)
+    Optional<DogRankView> findMyRank(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue,
+            @Param("dogId") Long dogId
+    );
+
+    @Query("""
+            select
+                rank.ranking as rank,
+                dog.id as dogId,
+                dog.name as dogName,
+                dog.profileImageUrl as profileImageUrl,
+                rank.totalDistance as totalDistance
+            from DogGlobalRank rank
+            join rank.dog dog
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+              and (
+                rank.totalDistance < :cursorDistance
+                or (rank.totalDistance = :cursorDistance and dog.id > :cursorDogId)
+              )
+            order by rank.totalDistance desc, dog.id asc
+            """)
+    Slice<DogRankView> findRanksByCursor(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue,
+            @Param("cursorDistance") Double cursorDistance,
+            @Param("cursorDogId") Long cursorDogId,
+            Pageable pageable
+    );
+}
