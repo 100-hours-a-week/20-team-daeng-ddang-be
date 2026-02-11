@@ -4,7 +4,6 @@ import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.domain.region.Region;
-import com.daengddang.daengdong_map.domain.region.RegionStatus;
 import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingCursorRequest;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingPeriodRequest;
@@ -13,15 +12,15 @@ import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankItemRe
 import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankingListResponse;
 import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankingSummaryResponse;
 import com.daengddang.daengdong_map.repository.RegionRankRepository;
-import com.daengddang.daengdong_map.repository.RegionRepository;
 import com.daengddang.daengdong_map.repository.projection.RegionRankView;
 import com.daengddang.daengdong_map.util.AccessValidator;
+import com.daengddang.daengdong_map.util.RankingCursorCodec;
+import com.daengddang.daengdong_map.util.RankingRequestValidator;
+import com.daengddang.daengdong_map.util.RegionValidator;
 import com.daengddang.daengdong_map.util.RankingValidator;
-import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,13 +32,15 @@ public class RegionRankingService {
     private static final int SUMMARY_TOP_LIMIT = 3;
 
     private final RegionRankRepository regionRankRepository;
-    private final RegionRepository regionRepository;
+    private final CursorPagingSupport cursorPagingSupport;
+    private final RankingRequestValidator rankingRequestValidator;
+    private final RankingCursorCodec rankingCursorCodec;
+    private final RegionValidator regionValidator;
     private final AccessValidator accessValidator;
 
     public RegionRankingSummaryResponse getRegionRankingSummary(Long userId, RankingPeriodRegionRequest dto) {
-        validateRequest(dto);
-        RankingPeriodType periodType = RankingValidator.parsePeriodType(dto.getPeriodType());
-        RankingValidator.validatePeriodValue(periodType, dto.getPeriodValue());
+        rankingRequestValidator.validateRequestNotNull(dto);
+        RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
         User user = accessValidator.getUserOrThrow(userId);
 
         Long regionId = resolveRegionId(user, dto.getRegionId());
@@ -61,64 +62,35 @@ public class RegionRankingService {
     public RegionRankingListResponse getRegionRankingList(Long userId,
                                                           RankingPeriodRequest dto,
                                                           RankingCursorRequest cursorDto) {
-        validatePeriodRequest(dto);
-        RankingPeriodType periodType = RankingValidator.parsePeriodType(dto.getPeriodType());
-        RankingValidator.validatePeriodValue(periodType, dto.getPeriodValue());
+        rankingRequestValidator.validateRequestNotNull(dto);
+        RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
         accessValidator.getUserOrThrow(userId);
 
-        String cursor = cursorDto == null ? null : cursorDto.getCursor();
-        int limit = RankingValidator.resolveLimit(cursorDto == null ? null : cursorDto.getLimit());
+        String cursor = rankingRequestValidator.resolveCursor(cursorDto);
+        int limit = rankingRequestValidator.resolveLimit(cursorDto);
 
-        List<RegionRankItemResponse> ranks;
-        boolean hasNext;
+        CursorPagingSupport.CursorPageResult<RegionRankItemResponse> page = cursorPagingSupport.paginate(
+                cursor,
+                limit,
+                fetchSize -> regionRankRepository.findRanks(periodType, dto.getPeriodValue(), PageRequest.of(0, fetchSize)),
+                RankingValidator::parseDistanceRegionCursor,
+                (parsedCursor, pageLimit) -> regionRankRepository.findRanksByCursor(
+                        periodType,
+                        dto.getPeriodValue(),
+                        parsedCursor.distance(),
+                        parsedCursor.regionId(),
+                        PageRequest.of(0, pageLimit)
+                ),
+                this::toRegionRankItem,
+                item -> rankingCursorCodec.toDistanceRegionCursor(item.getTotalDistance(), item.getRegionId())
+        );
 
-        if (isBlank(cursor)) {
-            int fetchSize = limit + 1;
-            List<RegionRankView> fetched = regionRankRepository
-                    .findRanks(periodType, dto.getPeriodValue(), PageRequest.of(0, fetchSize));
-            hasNext = fetched.size() > limit;
-            ranks = fetched.stream()
-                    .limit(limit)
-                    .map(this::toRegionRankItem)
-                    .toList();
-        } else {
-            RankingValidator.DistanceRegionCursor parsedCursor = RankingValidator.parseDistanceRegionCursor(cursor);
-            Slice<RegionRankView> slice = regionRankRepository.findRanksByCursor(
-                    periodType,
-                    dto.getPeriodValue(),
-                    parsedCursor.distance(),
-                    parsedCursor.regionId(),
-                    PageRequest.of(0, limit)
-            );
-            hasNext = slice.hasNext();
-            ranks = slice.getContent()
-                    .stream()
-                    .map(this::toRegionRankItem)
-                    .toList();
-        }
-
-        String nextCursor = hasNext && !ranks.isEmpty()
-                ? toDistanceRegionCursor(ranks.get(ranks.size() - 1).getTotalDistance(), ranks.get(ranks.size() - 1).getRegionId())
-                : null;
-
-        return RegionRankingListResponse.of(ranks, nextCursor, hasNext);
-    }
-
-    private void validateRequest(RankingPeriodRegionRequest dto) {
-        if (dto == null) {
-            throw new BaseException(ErrorCode.INVALID_FORMAT);
-        }
-    }
-
-    private void validatePeriodRequest(RankingPeriodRequest dto) {
-        if (dto == null) {
-            throw new BaseException(ErrorCode.INVALID_FORMAT);
-        }
+        return RegionRankingListResponse.of(page.items(), page.nextCursor(), page.hasNext());
     }
 
     private Long resolveRegionId(User user, Long requestedRegionId) {
         if (requestedRegionId != null) {
-            validateActiveRegion(requestedRegionId);
+            regionValidator.validateActiveRegion(requestedRegionId);
             return requestedRegionId;
         }
 
@@ -127,13 +99,8 @@ public class RegionRankingService {
             throw new BaseException(ErrorCode.REGION_NOT_FOUND);
         }
 
-        validateActiveRegion(userRegion.getId());
+        regionValidator.validateActiveRegion(userRegion.getId());
         return userRegion.getId();
-    }
-
-    private void validateActiveRegion(Long regionId) {
-        regionRepository.findByIdAndStatus(regionId, RegionStatus.ACTIVE)
-                .orElseThrow(() -> new BaseException(ErrorCode.REGION_NOT_FOUND));
     }
 
     private RegionRankItemResponse toRegionRankItem(RegionRankView view) {
@@ -143,20 +110,5 @@ public class RegionRankingService {
                 view.getRegionName(),
                 view.getTotalDistance()
         );
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
-    private String toDistanceRegionCursor(Double distance, Long regionId) {
-        return "distance:" + toPlainNumber(distance) + ",regionId:" + regionId;
-    }
-
-    private String toPlainNumber(Double value) {
-        if (value == null) {
-            return "0";
-        }
-        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
 }
