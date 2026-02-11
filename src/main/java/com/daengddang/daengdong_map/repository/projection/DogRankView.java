@@ -10,5 +10,5 @@ public interface DogRankView {
 
     String getProfileImageUrl();
 
-    Double getDistanceMeters();
+    Double getTotalDistance();
 }

@@ -10,7 +10,7 @@ public interface RegionContributionRankView {
 
     String getProfileImageUrl();
 
-    Double getDogDistanceMeters();
+    Double getDogDistance();
 
     Double getContributionRate();
 }

@@ -17,7 +17,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
                 rank.ranking as rank,
                 region.id as regionId,
                 region.name as regionName,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from RegionRank rank
             join rank.region region
             where rank.periodType = :periodType
@@ -35,7 +35,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
                 rank.ranking as rank,
                 region.id as regionId,
                 region.name as regionName,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from RegionRank rank
             join rank.region region
             where rank.periodType = :periodType
@@ -53,7 +53,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
                 rank.ranking as rank,
                 region.id as regionId,
                 region.name as regionName,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from RegionRank rank
             join rank.region region
             where rank.periodType = :periodType
@@ -71,7 +71,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
                 rank.ranking as rank,
                 region.id as regionId,
                 region.name as regionName,
-                rank.totalDistance as distanceMeters
+                rank.totalDistance as totalDistance
             from RegionRank rank
             join rank.region region
             where rank.periodType = :periodType
