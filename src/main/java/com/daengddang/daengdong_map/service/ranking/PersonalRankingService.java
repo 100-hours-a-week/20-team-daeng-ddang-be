@@ -121,6 +121,7 @@ public class PersonalRankingService {
                 view.getRank(),
                 view.getDogId(),
                 view.getDogName(),
+                view.getBirthDate(),
                 view.getProfileImageUrl(),
                 view.getTotalDistance()
         );

@@ -18,6 +18,7 @@ public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Lo
                 rank.ranking as rank,
                 dog.id as dogId,
                 dog.name as dogName,
+                dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
             from DogGlobalRank rank
@@ -37,6 +38,7 @@ public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Lo
                 rank.ranking as rank,
                 dog.id as dogId,
                 dog.name as dogName,
+                dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
             from DogGlobalRank rank
@@ -56,6 +58,7 @@ public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Lo
                 rank.ranking as rank,
                 dog.id as dogId,
                 dog.name as dogName,
+                dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
                 rank.totalDistance as totalDistance
             from DogGlobalRank rank
