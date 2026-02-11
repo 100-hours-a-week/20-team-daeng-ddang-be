@@ -21,6 +21,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FootprintService {
     private static final String WALK_TITLE_SUFFIX = " 산책일지";
     private static final String HEALTH_TITLE_SUFFIX = " 헬스케어";
+    private static final DateTimeFormatter TITLE_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
 
     private final WalkDiaryRepository walkDiaryRepository;
     private final AnalysisRepository analysisRepository;
@@ -78,18 +80,28 @@ public class FootprintService {
 
         List<DailyRecordWithTime> merged = new ArrayList<>();
         for (DailyRecordView walkRecord : walkRecords) {
-            String title = dateToTitlePrefix(date) + WALK_TITLE_SUFFIX;
+            String title = dateTimeToTitlePrefix(walkRecord.getCreatedAt()) + WALK_TITLE_SUFFIX;
             merged.add(new DailyRecordWithTime(
                     walkRecord.getCreatedAt(),
-                    FootprintDailyRecordItemResponse.of(FootprintRecordType.WALK, walkRecord.getId(), title)
+                    FootprintDailyRecordItemResponse.of(
+                            FootprintRecordType.WALK,
+                            walkRecord.getId(),
+                            title,
+                            walkRecord.getCreatedAt()
+                    )
             ));
         }
 
         for (DailyRecordView healthRecord : healthRecords) {
-            String title = dateToTitlePrefix(date) + HEALTH_TITLE_SUFFIX;
+            String title = dateTimeToTitlePrefix(healthRecord.getCreatedAt()) + HEALTH_TITLE_SUFFIX;
             merged.add(new DailyRecordWithTime(
                     healthRecord.getCreatedAt(),
-                    FootprintDailyRecordItemResponse.of(FootprintRecordType.HEALTH, healthRecord.getId(), title)
+                    FootprintDailyRecordItemResponse.of(
+                            FootprintRecordType.HEALTH,
+                            healthRecord.getId(),
+                            title,
+                            healthRecord.getCreatedAt()
+                    )
             ));
         }
 
@@ -159,8 +171,8 @@ public class FootprintService {
         }
     }
 
-    private String dateToTitlePrefix(LocalDate date) {
-        return date.toString().replace('-', '/');
+    private String dateTimeToTitlePrefix(LocalDateTime dateTime) {
+        return dateTime.format(TITLE_DATE_TIME_FORMATTER);
     }
 
     private void mergeCounts(Map<LocalDate, int[]> dayCountMap, List<DateCountView> counts, int typeIndex) {
