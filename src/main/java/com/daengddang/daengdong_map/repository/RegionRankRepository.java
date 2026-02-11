@@ -3,6 +3,7 @@ package com.daengddang.daengdong_map.repository;
 import com.daengddang.daengdong_map.domain.ranking.RegionRank;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.repository.projection.RegionRankView;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -24,7 +25,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
               and rank.periodValue = :periodValue
             order by rank.ranking asc
             """)
-    Slice<RegionRankView> findRanks(
+    List<RegionRankView> findRanks(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
             Pageable pageable

@@ -1,7 +1,6 @@
 package com.daengddang.daengdong_map.dto.request.ranking;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +16,6 @@ public class RankingPeriodRegionRequest {
     @NotBlank
     private String periodValue;
 
-    @NotNull
     private Long regionId;
 
     @Builder
