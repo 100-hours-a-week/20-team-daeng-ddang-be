@@ -45,7 +45,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
             join rank.dog dog
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-            order by rank.ranking asc
+            order by rank.totalDistance desc, dog.id asc
             """)
     List<DogRankView> findRanksAllRegions(
             @Param("periodType") RankingPeriodType periodType,
