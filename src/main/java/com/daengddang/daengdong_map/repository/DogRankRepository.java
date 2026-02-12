@@ -18,8 +18,9 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 rank.ranking as rank,
                 dog.id as dogId,
                 dog.name as dogName,
-                dog.birthDate as birthDate,            
+                dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
+                dog.breed.name as dogBreed,
                 rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
@@ -42,6 +43,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.name as dogName,
                 dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
+                dog.breed.name as dogBreed,
                 rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog
@@ -64,6 +66,7 @@ public interface DogRankRepository extends JpaRepository<DogRank, Long> {
                 dog.name as dogName,
                 dog.birthDate as birthDate,
                 dog.profileImageUrl as profileImageUrl,
+                dog.breed.name as dogBreed,
                 rank.totalDistance as totalDistance
             from DogRank rank
             join rank.dog dog

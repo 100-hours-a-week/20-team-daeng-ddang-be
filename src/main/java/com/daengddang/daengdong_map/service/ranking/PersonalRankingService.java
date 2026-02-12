@@ -123,6 +123,7 @@ public class PersonalRankingService {
                 view.getDogName(),
                 view.getBirthDate(),
                 view.getProfileImageUrl(),
+                view.getDogBreed(),
                 view.getTotalDistance()
         );
     }

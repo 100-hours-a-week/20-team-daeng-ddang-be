@@ -14,5 +14,7 @@ public interface DogRankView {
 
     String getProfileImageUrl();
 
+    String getDogBreed();
+
     Double getTotalDistance();
 }
