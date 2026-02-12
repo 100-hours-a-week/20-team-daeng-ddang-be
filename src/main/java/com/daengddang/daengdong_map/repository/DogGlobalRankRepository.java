@@ -26,7 +26,7 @@ public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Lo
             join rank.dog dog
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-            order by rank.ranking asc
+            order by rank.ranking asc, dog.id asc
             """)
     List<DogRankView> findRanks(
             @Param("periodType") RankingPeriodType periodType,
@@ -69,15 +69,15 @@ public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Lo
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
               and (
-                rank.totalDistance < :cursorDistance
-                or (rank.totalDistance = :cursorDistance and dog.id > :cursorDogId)
+                rank.ranking > :cursorRank
+                or (rank.ranking = :cursorRank and dog.id > :cursorDogId)
               )
-            order by rank.totalDistance desc, dog.id asc
+            order by rank.ranking asc, dog.id asc
             """)
     Slice<DogRankView> findRanksByCursor(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
-            @Param("cursorDistance") Double cursorDistance,
+            @Param("cursorRank") Integer cursorRank,
             @Param("cursorDogId") Long cursorDogId,
             Pageable pageable
     );

@@ -73,16 +73,16 @@ public class RegionRankingService {
                 cursor,
                 limit,
                 fetchSize -> regionRankRepository.findRanks(periodType, dto.getPeriodValue(), PageRequest.of(0, fetchSize)),
-                RankingValidator::parseDistanceRegionCursor,
+                RankingValidator::parseRankRegionCursor,
                 (parsedCursor, pageLimit) -> regionRankRepository.findRanksByCursor(
                         periodType,
                         dto.getPeriodValue(),
-                        parsedCursor.distance(),
+                        parsedCursor.rank(),
                         parsedCursor.regionId(),
                         PageRequest.of(0, pageLimit)
                 ),
                 this::toRegionRankItem,
-                item -> rankingCursorCodec.toDistanceRegionCursor(item.getTotalDistance(), item.getRegionId())
+                item -> rankingCursorCodec.toRankRegionCursor(item.getRank(), item.getRegionId())
         );
 
         return RegionRankingListResponse.of(page.items(), page.nextCursor(), page.hasNext());

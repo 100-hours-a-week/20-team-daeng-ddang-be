@@ -26,7 +26,7 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
               and rank.region.id = :regionId
-            order by rank.ranking asc
+            order by rank.ranking asc, dog.id asc
             """)
     List<RegionContributionRankView> findRanks(
             @Param("periodType") RankingPeriodType periodType,
@@ -93,16 +93,16 @@ public interface RegionDogRankRepository extends JpaRepository<RegionDogRank, Lo
               and rank.periodValue = :periodValue
               and rank.region.id = :regionId
               and (
-                rank.contributionRate < :cursorRate
-                or (rank.contributionRate = :cursorRate and dog.id > :cursorDogId)
+                rank.ranking > :cursorRank
+                or (rank.ranking = :cursorRank and dog.id > :cursorDogId)
               )
-            order by rank.contributionRate desc, dog.id asc
+            order by rank.ranking asc, dog.id asc
             """)
     Slice<RegionContributionRankView> findRanksByCursor(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
             @Param("regionId") Long regionId,
-            @Param("cursorRate") Double cursorRate,
+            @Param("cursorRank") Integer cursorRank,
             @Param("cursorDogId") Long cursorDogId,
             Pageable pageable
     );

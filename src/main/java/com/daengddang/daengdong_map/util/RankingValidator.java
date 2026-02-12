@@ -20,9 +20,8 @@ public final class RankingValidator {
 
     private static final Pattern MONTH_PATTERN = Pattern.compile("^(\\d{4})-(\\d{2})$");
     private static final Pattern WEEK_PATTERN = Pattern.compile("^(\\d{4})-W(\\d{2})$");
-    private static final Pattern DISTANCE_CURSOR_PATTERN = Pattern.compile("^distance:([-+]?\\d+(?:\\.\\d+)?),dogId:(\\d+)$");
-    private static final Pattern REGION_CURSOR_PATTERN = Pattern.compile("^distance:([-+]?\\d+(?:\\.\\d+)?),regionId:(\\d+)$");
-    private static final Pattern RATE_CURSOR_PATTERN = Pattern.compile("^rate:([-+]?\\d+(?:\\.\\d+)?),dogId:(\\d+)$");
+    private static final Pattern RANK_DOG_CURSOR_PATTERN = Pattern.compile("^rank:(\\d+),dogId:(\\d+)$");
+    private static final Pattern RANK_REGION_CURSOR_PATTERN = Pattern.compile("^rank:(\\d+),regionId:(\\d+)$");
 
     private RankingValidator() {
     }
@@ -61,28 +60,20 @@ public final class RankingValidator {
         return limit;
     }
 
-    public static DistanceDogCursor parseDistanceDogCursor(String cursor) {
-        Matcher matcher = DISTANCE_CURSOR_PATTERN.matcher(cursor == null ? "" : cursor.trim());
+    public static RankDogCursor parseRankDogCursor(String cursor) {
+        Matcher matcher = RANK_DOG_CURSOR_PATTERN.matcher(cursor == null ? "" : cursor.trim());
         if (!matcher.matches()) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
-        return new DistanceDogCursor(Double.parseDouble(matcher.group(1)), Long.parseLong(matcher.group(2)));
+        return new RankDogCursor(Integer.parseInt(matcher.group(1)), Long.parseLong(matcher.group(2)));
     }
 
-    public static DistanceRegionCursor parseDistanceRegionCursor(String cursor) {
-        Matcher matcher = REGION_CURSOR_PATTERN.matcher(cursor == null ? "" : cursor.trim());
+    public static RankRegionCursor parseRankRegionCursor(String cursor) {
+        Matcher matcher = RANK_REGION_CURSOR_PATTERN.matcher(cursor == null ? "" : cursor.trim());
         if (!matcher.matches()) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
-        return new DistanceRegionCursor(Double.parseDouble(matcher.group(1)), Long.parseLong(matcher.group(2)));
-    }
-
-    public static RateDogCursor parseRateDogCursor(String cursor) {
-        Matcher matcher = RATE_CURSOR_PATTERN.matcher(cursor == null ? "" : cursor.trim());
-        if (!matcher.matches()) {
-            throw new BaseException(ErrorCode.INVALID_FORMAT);
-        }
-        return new RateDogCursor(Double.parseDouble(matcher.group(1)), Long.parseLong(matcher.group(2)));
+        return new RankRegionCursor(Integer.parseInt(matcher.group(1)), Long.parseLong(matcher.group(2)));
     }
 
     private static void validateYear(String value) {
@@ -132,12 +123,9 @@ public final class RankingValidator {
         }
     }
 
-    public record DistanceDogCursor(double distance, long dogId) {
+    public record RankDogCursor(int rank, long dogId) {
     }
 
-    public record DistanceRegionCursor(double distance, long regionId) {
-    }
-
-    public record RateDogCursor(double rate, long dogId) {
+    public record RankRegionCursor(int rank, long regionId) {
     }
 }

@@ -92,12 +92,12 @@ public class PersonalRankingService {
                 fetchSize -> regionId == null
                         ? dogGlobalRankRepository.findRanks(periodType, dto.getPeriodValue(), PageRequest.of(0, fetchSize))
                         : dogRankRepository.findRanks(periodType, dto.getPeriodValue(), regionId, PageRequest.of(0, fetchSize)),
-                RankingValidator::parseDistanceDogCursor,
+                RankingValidator::parseRankDogCursor,
                 (parsedCursor, pageLimit) -> regionId == null
                         ? dogGlobalRankRepository.findRanksByCursor(
                         periodType,
                         dto.getPeriodValue(),
-                        parsedCursor.distance(),
+                        parsedCursor.rank(),
                         parsedCursor.dogId(),
                         PageRequest.of(0, pageLimit)
                 )
@@ -105,12 +105,12 @@ public class PersonalRankingService {
                         periodType,
                         dto.getPeriodValue(),
                         regionId,
-                        parsedCursor.distance(),
+                        parsedCursor.rank(),
                         parsedCursor.dogId(),
                         PageRequest.of(0, pageLimit)
                 ),
                 this::toPersonalRankItem,
-                item -> rankingCursorCodec.toDistanceDogCursor(item.getTotalDistance(), item.getDogId())
+                item -> rankingCursorCodec.toRankDogCursor(item.getRank(), item.getDogId())
         );
 
         return PersonalRankingListResponse.of(page.items(), page.nextCursor(), page.hasNext());

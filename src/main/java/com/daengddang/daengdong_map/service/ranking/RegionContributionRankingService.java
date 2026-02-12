@@ -75,17 +75,17 @@ public class RegionContributionRankingService {
                         dto.getRegionId(),
                         PageRequest.of(0, fetchSize)
                 ),
-                RankingValidator::parseRateDogCursor,
+                RankingValidator::parseRankDogCursor,
                 (parsedCursor, pageLimit) -> regionDogRankRepository.findRanksByCursor(
                         periodType,
                         dto.getPeriodValue(),
                         dto.getRegionId(),
-                        parsedCursor.rate(),
+                        parsedCursor.rank(),
                         parsedCursor.dogId(),
                         PageRequest.of(0, pageLimit)
                 ),
                 this::toContributionItem,
-                item -> rankingCursorCodec.toRateDogCursor(item.getContributionRate(), item.getDogId())
+                item -> rankingCursorCodec.toRankDogCursor(item.getRank(), item.getDogId())
         );
 
         return RegionContributionRankingListResponse.of(page.items(), page.nextCursor(), page.hasNext());

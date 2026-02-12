@@ -23,7 +23,7 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
             join rank.region region
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
-            order by rank.ranking asc
+            order by rank.ranking asc, region.id asc
             """)
     List<RegionRankView> findRanks(
             @Param("periodType") RankingPeriodType periodType,
@@ -78,15 +78,15 @@ public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
             where rank.periodType = :periodType
               and rank.periodValue = :periodValue
               and (
-                rank.totalDistance < :cursorDistance
-                or (rank.totalDistance = :cursorDistance and region.id > :cursorRegionId)
+                rank.ranking > :cursorRank
+                or (rank.ranking = :cursorRank and region.id > :cursorRegionId)
               )
-            order by rank.totalDistance desc, region.id asc
+            order by rank.ranking asc, region.id asc
             """)
     Slice<RegionRankView> findRanksByCursor(
             @Param("periodType") RankingPeriodType periodType,
             @Param("periodValue") String periodValue,
-            @Param("cursorDistance") Double cursorDistance,
+            @Param("cursorRank") Integer cursorRank,
             @Param("cursorRegionId") Long cursorRegionId,
             Pageable pageable
     );
