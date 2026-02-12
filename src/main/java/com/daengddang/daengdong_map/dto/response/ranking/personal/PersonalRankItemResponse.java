@@ -12,6 +12,7 @@ public class PersonalRankItemResponse {
     private final String dogName;
     private final LocalDate birthDate;
     private final String profileImageUrl;
+    private final String breed;
     private final Double totalDistance;
 
     private PersonalRankItemResponse(Integer rank,
@@ -19,12 +20,14 @@ public class PersonalRankItemResponse {
                                      String dogName,
                                      LocalDate birthDate,
                                      String profileImageUrl,
+                                     String breed,
                                      Double totalDistance) {
         this.rank = rank;
         this.dogId = dogId;
         this.dogName = dogName;
         this.birthDate = birthDate;
         this.profileImageUrl = profileImageUrl;
+        this.breed = breed;
         this.totalDistance = totalDistance;
     }
 
@@ -33,7 +36,8 @@ public class PersonalRankItemResponse {
                                               String dogName,
                                               LocalDate birthDate,
                                               String profileImageUrl,
+                                              String breed,
                                               Double totalDistance) {
-        return new PersonalRankItemResponse(rank, dogId, dogName, birthDate, profileImageUrl, totalDistance);
+        return new PersonalRankItemResponse(rank, dogId, dogName, birthDate, profileImageUrl, breed, totalDistance);
     }
 }
