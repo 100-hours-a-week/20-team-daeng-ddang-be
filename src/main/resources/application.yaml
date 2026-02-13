@@ -58,8 +58,9 @@ ai:
   fastapi:
     mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}
     expression-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}
+
 ranking:
   batch:
     enabled: true
-    cron: "0 */10 * * * *"
+    cron: "0 0 0 * * *"
     zone: Asia/Seoul

@@ -14,7 +14,7 @@ public class RankingBatchScheduler {
 
     private final RankingBatchService rankingBatchService;
 
-    @Scheduled(cron = "${ranking.batch.cron:0 */10 * * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
+    @Scheduled(cron = "${ranking.batch.cron:0 0 3 * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
     public void run() {
         log.debug("Trigger ranking batch scheduler");
         rankingBatchService.runAll();
