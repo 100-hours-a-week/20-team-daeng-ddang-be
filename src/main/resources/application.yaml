@@ -21,6 +21,10 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
+  batch:
+    job:
+      enabled: true
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-expire-minutes: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
@@ -54,3 +58,8 @@ ai:
   fastapi:
     mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}
     expression-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}
+ranking:
+  batch:
+    enabled: true
+    cron: "0 */10 * * * *"
+    zone: Asia/Seoul
