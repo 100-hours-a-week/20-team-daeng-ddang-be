@@ -63,4 +63,5 @@ ranking:
   batch:
     enabled: true
     cron: "0 0 0 * * *"
+    cleanup-cron: "0 30 3 * * *"
     zone: Asia/Seoul

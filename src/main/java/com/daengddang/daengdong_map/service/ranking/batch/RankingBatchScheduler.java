@@ -14,9 +14,15 @@ public class RankingBatchScheduler {
 
     private final RankingBatchService rankingBatchService;
 
-    @Scheduled(cron = "${ranking.batch.cron:0 0 3 * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
-    public void run() {
-        log.debug("Trigger ranking batch scheduler");
-        rankingBatchService.runAll();
+    @Scheduled(cron = "${ranking.batch.cron:0 0 0 * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
+    public void runUpsert() {
+        log.debug("Trigger ranking upsert batch scheduler");
+        rankingBatchService.runUpsertAll();
+    }
+
+    @Scheduled(cron = "${ranking.batch.cleanup-cron:0 30 3 * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
+    public void runCleanup() {
+        log.debug("Trigger ranking cleanup batch scheduler");
+        rankingBatchService.runCleanupAll();
     }
 }
