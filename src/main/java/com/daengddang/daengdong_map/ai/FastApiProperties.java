@@ -11,4 +11,5 @@ public class FastApiProperties {
 
     private String missionJudgeUri;
     private String expressionAnalyzeUri;
+    private String healthcareAnalyzeUri;
 }

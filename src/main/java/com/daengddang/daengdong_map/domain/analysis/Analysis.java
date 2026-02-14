@@ -73,6 +73,9 @@ public class Analysis {
     @Column(name = "gait_rhythm_desc", nullable = false)
     private String gaitRhythmDesc;
 
+    @Column(name = "keypoint_overlay_video_url", length = 512)
+    private String keypointOverlayVideoUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -94,6 +97,7 @@ public class Analysis {
                      String gaitStabilityDesc,
                      Integer gaitRhythmScore,
                      String gaitRhythmDesc,
+                     String keypointOverlayVideoUrl,
                      LocalDateTime createdAt,
                      Dog dog) {
         this.summary = summary;
@@ -109,6 +113,7 @@ public class Analysis {
         this.gaitStabilityDesc = gaitStabilityDesc;
         this.gaitRhythmScore = gaitRhythmScore;
         this.gaitRhythmDesc = gaitRhythmDesc;
+        this.keypointOverlayVideoUrl = keypointOverlayVideoUrl;
         this.createdAt = createdAt;
         this.dog = dog;
     }
