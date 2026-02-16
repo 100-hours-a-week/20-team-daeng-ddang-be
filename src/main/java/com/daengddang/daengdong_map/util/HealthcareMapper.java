@@ -29,14 +29,19 @@ public class HealthcareMapper {
                 .videoUrl(request.getVideoUrl())
                 .patellaRiskScore(metrics.getPatellaRiskSignal().getScore())
                 .patellaRiskDesc(metrics.getPatellaRiskSignal().getDescription())
+                .patellaRiskLevel(metrics.getPatellaRiskSignal().getLevel())
                 .gaitBalanceScore(metrics.getGaitBalance().getScore())
                 .gaitBalanceDesc(metrics.getGaitBalance().getDescription())
+                .gaitBalanceLevel(metrics.getGaitBalance().getLevel())
                 .kneeMobilityScore(metrics.getKneeMobility().getScore())
                 .kneeMobilityDesc(metrics.getKneeMobility().getDescription())
+                .kneeMobilityLevel(metrics.getKneeMobility().getLevel())
                 .gaitStabilityScore(metrics.getGaitStability().getScore())
                 .gaitStabilityDesc(metrics.getGaitStability().getDescription())
+                .gaitStabilityLevel(metrics.getGaitStability().getLevel())
                 .gaitRhythmScore(metrics.getGaitRhythm().getScore())
                 .gaitRhythmDesc(metrics.getGaitRhythm().getDescription())
+                .gaitRhythmLevel(metrics.getGaitRhythm().getLevel())
                 .keypointOverlayVideoUrl(
                         response.getArtifacts() == null
                                 ? null
@@ -55,27 +60,27 @@ public class HealthcareMapper {
                 analysis.getSummary(),
                 HealthcareAnalyzeResponse.Metrics.of(
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                null,
+                                analysis.getPatellaRiskLevel(),
                                 analysis.getPatellaRiskScore(),
                                 analysis.getPatellaRiskDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                null,
+                                analysis.getGaitBalanceLevel(),
                                 analysis.getGaitBalanceScore(),
                                 analysis.getGaitBalanceDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                null,
+                                analysis.getKneeMobilityLevel(),
                                 analysis.getKneeMobilityScore(),
                                 analysis.getKneeMobilityDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                null,
+                                analysis.getGaitStabilityLevel(),
                                 analysis.getGaitStabilityScore(),
                                 analysis.getGaitStabilityDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                null,
+                                analysis.getGaitRhythmLevel(),
                                 analysis.getGaitRhythmScore(),
                                 analysis.getGaitRhythmDesc()
                         )
@@ -92,27 +97,27 @@ public class HealthcareMapper {
                 analysis.getSummary(),
                 HealthcareAnalyzeResponse.Metrics.of(
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                response.getMetrics().getPatellaRiskSignal().getLevel(),
+                                analysis.getPatellaRiskLevel(),
                                 analysis.getPatellaRiskScore(),
                                 analysis.getPatellaRiskDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                response.getMetrics().getGaitBalance().getLevel(),
+                                analysis.getGaitBalanceLevel(),
                                 analysis.getGaitBalanceScore(),
                                 analysis.getGaitBalanceDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                response.getMetrics().getKneeMobility().getLevel(),
+                                analysis.getKneeMobilityLevel(),
                                 analysis.getKneeMobilityScore(),
                                 analysis.getKneeMobilityDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                response.getMetrics().getGaitStability().getLevel(),
+                                analysis.getGaitStabilityLevel(),
                                 analysis.getGaitStabilityScore(),
                                 analysis.getGaitStabilityDesc()
                         ),
                         HealthcareAnalyzeResponse.MetricDetail.of(
-                                response.getMetrics().getGaitRhythm().getLevel(),
+                                analysis.getGaitRhythmLevel(),
                                 analysis.getGaitRhythmScore(),
                                 analysis.getGaitRhythmDesc()
                         )

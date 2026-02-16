@@ -26,4 +26,4 @@ ratelimit:
   enabled: false
 ranking:
   batch:
-    cron: "0 * * * * *"
+    cron: "0 */30 * * * *"

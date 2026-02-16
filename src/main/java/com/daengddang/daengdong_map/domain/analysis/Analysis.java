@@ -49,11 +49,17 @@ public class Analysis {
     @Column(name = "patella_risk_desc", nullable = false)
     private String patellaRiskDesc;
 
+    @Column(name = "patella_risk_level", nullable = false, length = 16)
+    private String patellaRiskLevel;
+
     @Column(name = "gait_balance_score", nullable = false)
     private Integer gaitBalanceScore;
 
     @Column(name = "gait_balance_desc", nullable = false)
     private String gaitBalanceDesc;
+
+    @Column(name = "gait_balance_level", nullable = false, length = 16)
+    private String gaitBalanceLevel;
 
     @Column(name = "knee_mobility_score", nullable = false)
     private Integer kneeMobilityScore;
@@ -61,17 +67,26 @@ public class Analysis {
     @Column(name = "knee_mobility_desc", nullable = false)
     private String kneeMobilityDesc;
 
+    @Column(name = "knee_mobility_level", nullable = false, length = 16)
+    private String kneeMobilityLevel;
+
     @Column(name = "gait_stability_score", nullable = false)
     private Integer gaitStabilityScore;
 
     @Column(name = "gait_stability_desc", nullable = false)
     private String gaitStabilityDesc;
 
+    @Column(name = "gait_stability_level", nullable = false, length = 16)
+    private String gaitStabilityLevel;
+
     @Column(name = "gait_rhythm_score", nullable = false)
     private Integer gaitRhythmScore;
 
     @Column(name = "gait_rhythm_desc", nullable = false)
     private String gaitRhythmDesc;
+
+    @Column(name = "gait_rhythm_level", nullable = false, length = 16)
+    private String gaitRhythmLevel;
 
     @Column(name = "keypoint_overlay_video_url", length = 512)
     private String keypointOverlayVideoUrl;
@@ -89,14 +104,19 @@ public class Analysis {
                      String videoUrl,
                      Integer patellaRiskScore,
                      String patellaRiskDesc,
+                     String patellaRiskLevel,
                      Integer gaitBalanceScore,
                      String gaitBalanceDesc,
+                     String gaitBalanceLevel,
                      Integer kneeMobilityScore,
                      String kneeMobilityDesc,
+                     String kneeMobilityLevel,
                      Integer gaitStabilityScore,
                      String gaitStabilityDesc,
+                     String gaitStabilityLevel,
                      Integer gaitRhythmScore,
                      String gaitRhythmDesc,
+                     String gaitRhythmLevel,
                      String keypointOverlayVideoUrl,
                      LocalDateTime createdAt,
                      Dog dog) {
@@ -105,14 +125,19 @@ public class Analysis {
         this.videoUrl = videoUrl;
         this.patellaRiskScore = patellaRiskScore;
         this.patellaRiskDesc = patellaRiskDesc;
+        this.patellaRiskLevel = patellaRiskLevel;
         this.gaitBalanceScore = gaitBalanceScore;
         this.gaitBalanceDesc = gaitBalanceDesc;
+        this.gaitBalanceLevel = gaitBalanceLevel;
         this.kneeMobilityScore = kneeMobilityScore;
         this.kneeMobilityDesc = kneeMobilityDesc;
+        this.kneeMobilityLevel = kneeMobilityLevel;
         this.gaitStabilityScore = gaitStabilityScore;
         this.gaitStabilityDesc = gaitStabilityDesc;
+        this.gaitStabilityLevel = gaitStabilityLevel;
         this.gaitRhythmScore = gaitRhythmScore;
         this.gaitRhythmDesc = gaitRhythmDesc;
+        this.gaitRhythmLevel = gaitRhythmLevel;
         this.keypointOverlayVideoUrl = keypointOverlayVideoUrl;
         this.createdAt = createdAt;
         this.dog = dog;
