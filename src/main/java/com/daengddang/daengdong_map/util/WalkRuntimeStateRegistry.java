@@ -1,40 +1,73 @@
 package com.daengddang.daengdong_map.util;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class WalkRuntimeStateRegistry {
 
-    private final ConcurrentMap<Long, SyncState> syncStates = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Long, StayState> stayStates = new ConcurrentHashMap<>();
+    private static final Duration SYNC_TTL = Duration.ofMinutes(30);
+    private static final Duration STAY_TTL = Duration.ofMinutes(30);
+
+    private final RedissonClient redissonClient;
 
     public SyncState getSyncState(Long walkId) {
-        return syncStates.get(walkId);
+        RMapCache<String, String> map = redissonClient.getMapCache(syncKey(walkId));
+        String areaKey = map.get("areaKey");
+        String lastSyncedAt = map.get("lastSyncedAt");
+        if (areaKey == null || lastSyncedAt == null) {
+            return null;
+        }
+        return new SyncState(areaKey, LocalDateTime.parse(lastSyncedAt));
     }
 
     public void putSyncState(Long walkId, SyncState state) {
-        syncStates.put(walkId, state);
+        RMapCache<String, String> map = redissonClient.getMapCache(syncKey(walkId));
+        map.fastPut("areaKey", state.getAreaKey());
+        map.fastPut("lastSyncedAt", state.getLastSyncedAt().toString());
+        map.expire(SYNC_TTL);
     }
 
     public StayState getStayState(Long walkId) {
-        return stayStates.get(walkId);
+        RMapCache<String, String> map = redissonClient.getMapCache(stayKey(walkId));
+        String blockId = map.get("blockId");
+        String enteredAt = map.get("enteredAt");
+        String lastSeenAt = map.get("lastSeenAt");
+        if (blockId == null || enteredAt == null || lastSeenAt == null) {
+            return null;
+        }
+        StayState state = new StayState(blockId, LocalDateTime.parse(enteredAt));
+        state.recordLastSeenAt(LocalDateTime.parse(lastSeenAt));
+        return state;
     }
 
     public void putStayState(Long walkId, StayState state) {
-        stayStates.put(walkId, state);
+        RMapCache<String, String> map = redissonClient.getMapCache(stayKey(walkId));
+        map.fastPut("blockId", state.getBlockId());
+        map.fastPut("enteredAt", state.getEnteredAt().toString());
+        map.fastPut("lastSeenAt", state.getLastSeenAt().toString());
+        map.expire(STAY_TTL);
     }
 
     public void clear(Long walkId) {
         if (walkId == null) {
             return;
         }
-        syncStates.remove(walkId);
-        stayStates.remove(walkId);
+        redissonClient.getKeys().delete(syncKey(walkId), stayKey(walkId));
+    }
+
+    private String syncKey(Long walkId) {
+        return "walk:sync:" + walkId;
+    }
+
+    private String stayKey(Long walkId) {
+        return "walk:stay:" + walkId;
     }
 
     @Getter

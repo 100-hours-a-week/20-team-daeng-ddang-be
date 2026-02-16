@@ -23,6 +23,7 @@ public class StayValidator {
         }
 
         state.recordLastSeenAt(timestamp);
+        stateRegistry.putStayState(walkId, state);
         Duration stayed = Duration.between(state.getEnteredAt(), timestamp);
         return stayed.getSeconds() >= STAY_SECONDS;
     }
