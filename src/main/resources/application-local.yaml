@@ -24,3 +24,6 @@ logging:
 
 ratelimit:
   enabled: false
+ranking:
+  batch:
+    cron: "0 */30 * * * *"
