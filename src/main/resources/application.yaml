@@ -58,6 +58,7 @@ ai:
   fastapi:
     mission-judge-uri: ${FASTAPI_MISSION_JUDGE_URI}
     expression-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}
+    healthcare-analyze-uri: ${FASTAPI_HEALTHCARE_ANALYZE_URI}
 
 ranking:
   batch:
