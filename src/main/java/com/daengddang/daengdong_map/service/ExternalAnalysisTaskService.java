@@ -81,7 +81,7 @@ public class ExternalAnalysisTaskService {
             String videoUrl
     ) {
         try {
-            ExternalAnalysisTask saved = externalAnalysisTaskRepository.save(
+            ExternalAnalysisTask saved = externalAnalysisTaskRepository.saveAndFlush(
                     ExternalAnalysisTask.builder()
                             .taskId(UUID.randomUUID().toString())
                             .type(type)
@@ -106,7 +106,7 @@ public class ExternalAnalysisTaskService {
             String videoUrl
     ) {
         try {
-            ExternalAnalysisTask saved = externalAnalysisTaskRepository.save(
+            ExternalAnalysisTask saved = externalAnalysisTaskRepository.saveAndFlush(
                     ExternalAnalysisTask.builder()
                             .taskId(UUID.randomUUID().toString())
                             .type(type)
