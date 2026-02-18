@@ -22,13 +22,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v3/walks/{walkId}")
+@RequestMapping("/api/v3")
 @RequiredArgsConstructor
 public class AnalysisTaskController implements AnalysisTaskApi {
 
     private final ExternalAnalysisTaskService externalAnalysisTaskService;
 
-    @PostMapping("/missions/analysis-tasks")
+    @PostMapping("/walks/{walkId}/missions/analysis-tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createMissionTask(
@@ -40,7 +40,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @PostMapping("/expressions/analysis-tasks")
+    @PostMapping("/walks/{walkId}/expressions/analysis-tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createExpressionTask(
@@ -53,20 +53,19 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @PostMapping("/healthcare/analysis-tasks")
+    @PostMapping("/healthcares/analysis-tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createHealthcareTask(
             @AuthenticationPrincipal AuthUser authUser,
-            @PathVariable Long walkId,
             @Valid @RequestBody HealthcareAnalyzeRequest dto
     ) {
         AnalysisTaskAcceptedResponse response =
-                externalAnalysisTaskService.createHealthcareTask(authUser.getUserId(), walkId, dto);
+                externalAnalysisTaskService.createHealthcareTask(authUser.getUserId(), dto);
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @GetMapping("/analysis-tasks/{taskId}")
+    @GetMapping("/walks/{walkId}/analysis-tasks/{taskId}")
     @Override
     public ApiResponse<AnalysisTaskDetailResponse> getTask(
             @AuthenticationPrincipal AuthUser authUser,
@@ -75,6 +74,17 @@ public class AnalysisTaskController implements AnalysisTaskApi {
     ) {
         AnalysisTaskDetailResponse response =
                 externalAnalysisTaskService.getTask(authUser.getUserId(), walkId, taskId);
+        return ApiResponse.success(SuccessCode.ANALYSIS_TASK_RETRIEVED, response);
+    }
+
+    @GetMapping("/healthcares/analysis-tasks/{taskId}")
+    @Override
+    public ApiResponse<AnalysisTaskDetailResponse> getHealthcareTask(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable String taskId
+    ) {
+        AnalysisTaskDetailResponse response =
+                externalAnalysisTaskService.getHealthcareTask(authUser.getUserId(), taskId);
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_RETRIEVED, response);
     }
 }

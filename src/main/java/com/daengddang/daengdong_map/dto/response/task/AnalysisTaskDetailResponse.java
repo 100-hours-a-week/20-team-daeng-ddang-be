@@ -42,7 +42,7 @@ public class AnalysisTaskDetailResponse {
     public static AnalysisTaskDetailResponse from(ExternalAnalysisTask task) {
         return AnalysisTaskDetailResponse.builder()
                 .taskId(task.getTaskId())
-                .walkId(task.getWalk().getId())
+                .walkId(task.getWalk() == null ? null : task.getWalk().getId())
                 .type(task.getType().name())
                 .status(task.getStatus().name())
                 .requestedAt(task.getRequestedAt())

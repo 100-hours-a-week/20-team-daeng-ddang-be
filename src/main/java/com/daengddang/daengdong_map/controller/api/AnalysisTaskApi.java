@@ -69,7 +69,6 @@ public interface AnalysisTaskApi {
     })
     ApiResponse<AnalysisTaskAcceptedResponse> createHealthcareTask(
             @Parameter(hidden = true) AuthUser authUser,
-            @PathVariable Long walkId,
             @RequestBody HealthcareAnalyzeRequest dto
     );
 
@@ -87,6 +86,22 @@ public interface AnalysisTaskApi {
     ApiResponse<AnalysisTaskDetailResponse> getTask(
             @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long walkId,
+            @PathVariable String taskId
+    );
+
+    @Operation(summary = "Get healthcare analysis task")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND")
+    })
+    @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
+            com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
+    })
+    ApiResponse<AnalysisTaskDetailResponse> getHealthcareTask(
+            @Parameter(hidden = true) AuthUser authUser,
             @PathVariable String taskId
     );
 }

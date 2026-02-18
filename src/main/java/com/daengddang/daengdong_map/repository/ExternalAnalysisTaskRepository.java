@@ -13,9 +13,25 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     Optional<ExternalAnalysisTask> findByTaskId(String taskId);
 
-    Optional<ExternalAnalysisTask> findTopByWalk_IdAndTypeOrderByRequestedAtDescIdDesc(
+    Optional<ExternalAnalysisTask> findByWalkIdAndTaskId(Long walkId, String taskId);
+
+    Optional<ExternalAnalysisTask> findByDogIdAndTaskId(Long dogId, String taskId);
+
+    Optional<ExternalAnalysisTask> findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(
             Long walkId,
             ExternalAnalysisTaskType type
+    );
+
+    Optional<ExternalAnalysisTask> findTopByWalkIdAndTypeAndStatusInOrderByRequestedAtDescIdDesc(
+            Long walkId,
+            ExternalAnalysisTaskType type,
+            List<ExternalAnalysisTaskStatus> statuses
+    );
+
+    Optional<ExternalAnalysisTask> findTopByDogIdAndTypeAndStatusInOrderByRequestedAtDescIdDesc(
+            Long dogId,
+            ExternalAnalysisTaskType type,
+            List<ExternalAnalysisTaskStatus> statuses
     );
 
     List<ExternalAnalysisTask> findByStatusOrderByRequestedAtAsc(
@@ -24,7 +40,23 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
     );
 
     default Optional<ExternalAnalysisTask> findLatestByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
-        return findTopByWalk_IdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
+        return findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
+    }
+
+    default Optional<ExternalAnalysisTask> findLatestActiveByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
+        return findTopByWalkIdAndTypeAndStatusInOrderByRequestedAtDescIdDesc(
+                walkId,
+                type,
+                List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING)
+        );
+    }
+
+    default Optional<ExternalAnalysisTask> findLatestActiveByDogIdAndType(Long dogId, ExternalAnalysisTaskType type) {
+        return findTopByDogIdAndTypeAndStatusInOrderByRequestedAtDescIdDesc(
+                dogId,
+                type,
+                List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING)
+        );
     }
 
     default List<ExternalAnalysisTask> findPendingBatch(int batchSize) {

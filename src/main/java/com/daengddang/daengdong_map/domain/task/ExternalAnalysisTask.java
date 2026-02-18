@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.domain.task;
 
+import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.domain.walk.Walk;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +32,7 @@ import lombok.NoArgsConstructor;
         },
         indexes = {
                 @Index(name = "idx_external_analysis_tasks_walk_type_requested_at", columnList = "walk_id, type, requested_at"),
+                @Index(name = "idx_external_analysis_tasks_dog_type_requested_at", columnList = "dog_id, type, requested_at"),
                 @Index(name = "idx_external_analysis_tasks_status_requested_at", columnList = "status, requested_at")
         }
 )
@@ -77,8 +79,12 @@ public class ExternalAnalysisTask {
     private String videoUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "walk_id", nullable = false)
+    @JoinColumn(name = "walk_id")
     private Walk walk;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dog_id", nullable = false)
+    private Dog dog;
 
     @Builder
     private ExternalAnalysisTask(String taskId,
@@ -90,7 +96,8 @@ public class ExternalAnalysisTask {
                                  String errorCode,
                                  String errorMessage,
                                  String videoUrl,
-                                 Walk walk) {
+                                 Walk walk,
+                                 Dog dog) {
         this.taskId = taskId;
         this.type = type;
         this.status = status;
@@ -101,6 +108,7 @@ public class ExternalAnalysisTask {
         this.errorMessage = errorMessage;
         this.videoUrl = videoUrl;
         this.walk = walk;
+        this.dog = dog;
     }
 
     @PrePersist

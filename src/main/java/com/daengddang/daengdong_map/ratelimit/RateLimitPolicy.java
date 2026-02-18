@@ -28,9 +28,11 @@ public class RateLimitPolicy {
                         "/api/v3/walks/{walkId}/expressions/analysis-tasks", 10, 60),
 
                 rule("HEALTHCARE_ANALYSIS_TASKS", "POST",
-                        "/api/v3/walks/{walkId}/healthcare/analysis-tasks", 10, 60),
+                        "/api/v3/healthcares/analysis-tasks", 10, 60),
                 rule("ANALYSIS_TASKS_GET", "GET",
                         "/api/v3/walks/{walkId}/analysis-tasks/{taskId}", 60, 60),
+                rule("HEALTHCARE_ANALYSIS_TASKS_GET", "GET",
+                        "/api/v3/healthcares/analysis-tasks/{taskId}", 60, 60),
 
                 rule("PRESIGNED_URL", "POST", "/api/v3/presigned-url", 30, 60),
 
