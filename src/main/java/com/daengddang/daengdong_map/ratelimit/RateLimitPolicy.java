@@ -18,11 +18,19 @@ public class RateLimitPolicy {
                 rule("WALKS_DIARY", "POST", "/api/v3/walks/{walkId}/diaries", 6, 60),
 
                 rule("MISSIONS_ANALYSIS", "POST", "/api/v3/walks/{walkId}/missions/analysis", 5, 60),
+                rule("MISSIONS_ANALYSIS_TASKS", "POST", "/api/v3/walks/{walkId}/missions/analysis-tasks", 5, 60),
                 rule("MISSIONS_UPLOAD", "POST", "/api/v3/walks/{walkId}/missions", 30, 60),
                 rule("MISSIONS_LIST", "GET", "/api/v3/walks/{walkId}/missions", 60, 60),
 
                 rule("EXPRESSIONS_ANALYSIS", "POST",
                         "/api/v3/walks/{walkId}/expressions/analysis", 10, 60),
+                rule("EXPRESSIONS_ANALYSIS_TASKS", "POST",
+                        "/api/v3/walks/{walkId}/expressions/analysis-tasks", 10, 60),
+
+                rule("HEALTHCARE_ANALYSIS_TASKS", "POST",
+                        "/api/v3/walks/{walkId}/healthcare/analysis-tasks", 10, 60),
+                rule("ANALYSIS_TASKS_GET", "GET",
+                        "/api/v3/walks/{walkId}/analysis-tasks/{taskId}", 60, 60),
 
                 rule("PRESIGNED_URL", "POST", "/api/v3/presigned-url", 30, 60),
 
