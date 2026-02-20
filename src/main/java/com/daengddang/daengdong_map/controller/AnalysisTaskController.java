@@ -28,7 +28,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
 
     private final ExternalAnalysisTaskService externalAnalysisTaskService;
 
-    @PostMapping("/walks/{walkId}/missions/analysis-tasks")
+    @PostMapping("/walks/{walkId}/missions/analysis/tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createMissionTask(
@@ -40,7 +40,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @PostMapping("/walks/{walkId}/expressions/analysis-tasks")
+    @PostMapping("/walks/{walkId}/expressions/analysis/tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createExpressionTask(
@@ -53,7 +53,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @PostMapping("/healthcares/analysis-tasks")
+    @PostMapping("/healthcares/analysis/tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Override
     public ApiResponse<AnalysisTaskAcceptedResponse> createHealthcareTask(
@@ -65,7 +65,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_ACCEPTED, response);
     }
 
-    @GetMapping("/walks/{walkId}/analysis-tasks/{taskId}")
+    @GetMapping("/walks/{walkId}/analysis/tasks/{taskId}")
     @Override
     public ApiResponse<AnalysisTaskDetailResponse> getTask(
             @AuthenticationPrincipal AuthUser authUser,
@@ -77,7 +77,7 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_RETRIEVED, response);
     }
 
-    @GetMapping("/healthcares/analysis-tasks/{taskId}")
+    @GetMapping("/healthcares/analysis/tasks/{taskId}")
     @Override
     public ApiResponse<AnalysisTaskDetailResponse> getHealthcareTask(
             @AuthenticationPrincipal AuthUser authUser,

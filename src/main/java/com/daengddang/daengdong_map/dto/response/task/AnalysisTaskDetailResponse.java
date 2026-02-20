@@ -17,6 +17,8 @@ public class AnalysisTaskDetailResponse {
     private final LocalDateTime finishedAt;
     private final String errorCode;
     private final String errorMessage;
+    private final String resultType;
+    private final String resultId;
 
     @Builder
     private AnalysisTaskDetailResponse(String taskId,
@@ -27,7 +29,9 @@ public class AnalysisTaskDetailResponse {
                                        LocalDateTime startedAt,
                                        LocalDateTime finishedAt,
                                        String errorCode,
-                                       String errorMessage) {
+                                       String errorMessage,
+                                       String resultType,
+                                       String resultId) {
         this.taskId = taskId;
         this.walkId = walkId;
         this.type = type;
@@ -37,6 +41,8 @@ public class AnalysisTaskDetailResponse {
         this.finishedAt = finishedAt;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
+        this.resultType = resultType;
+        this.resultId = resultId;
     }
 
     public static AnalysisTaskDetailResponse from(ExternalAnalysisTask task) {
@@ -50,6 +56,8 @@ public class AnalysisTaskDetailResponse {
                 .finishedAt(task.getFinishedAt())
                 .errorCode(task.getErrorCode())
                 .errorMessage(task.getErrorMessage())
+                .resultType(task.getResultType())
+                .resultId(task.getResultId())
                 .build();
     }
 }

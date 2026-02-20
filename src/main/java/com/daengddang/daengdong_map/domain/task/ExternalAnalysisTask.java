@@ -78,6 +78,12 @@ public class ExternalAnalysisTask {
     @Column(name = "video_url", length = 1000)
     private String videoUrl;
 
+    @Column(name = "result_type", length = 30)
+    private String resultType;
+
+    @Column(name = "result_id", length = 64)
+    private String resultId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "walk_id")
     private Walk walk;
@@ -96,6 +102,8 @@ public class ExternalAnalysisTask {
                                  String errorCode,
                                  String errorMessage,
                                  String videoUrl,
+                                 String resultType,
+                                 String resultId,
                                  Walk walk,
                                  Dog dog) {
         this.taskId = taskId;
@@ -107,6 +115,8 @@ public class ExternalAnalysisTask {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
         this.videoUrl = videoUrl;
+        this.resultType = resultType;
+        this.resultId = resultId;
         this.walk = walk;
         this.dog = dog;
     }
