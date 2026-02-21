@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MissionUploadService {
+    private static final int MAX_UPLOADS_PER_WALK = 3;
 
     private final AccessValidator accessValidator;
     private final MissionRepository missionRepository;
@@ -40,11 +41,17 @@ public class MissionUploadService {
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
 
         MissionUpload upload = missionUploadRepository.findByWalkAndMission(walk, mission)
-                .orElseGet(() -> MissionUpload.builder()
-                        .mission(mission)
-                        .walk(walk)
-                        .videoUrl(request.getVideoUrl())
-                        .build());
+                .orElseGet(() -> {
+                    long uploadCount = missionUploadRepository.countByWalk(walk);
+                    if (uploadCount >= MAX_UPLOADS_PER_WALK) {
+                        throw new BaseException(ErrorCode.MISSION_UPLOAD_LIMIT_EXCEEDED);
+                    }
+                    return MissionUpload.builder()
+                            .mission(mission)
+                            .walk(walk)
+                            .videoUrl(request.getVideoUrl())
+                            .build();
+                });
 
         upload.updateVideoUrl(request.getVideoUrl());
         MissionUpload saved = missionUploadRepository.save(upload);
