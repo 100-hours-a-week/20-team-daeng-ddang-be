@@ -12,12 +12,14 @@ import com.daengddang.daengdong_map.dto.request.expression.ExpressionAnalyzeRequ
 import com.daengddang.daengdong_map.dto.request.healthcare.HealthcareAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskAcceptedResponse;
 import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskDetailResponse;
+import com.daengddang.daengdong_map.event.ExternalAnalysisTaskCreatedEvent;
 import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import com.daengddang.daengdong_map.repository.MissionUploadRepository;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class ExternalAnalysisTaskService {
     private final AccessValidator accessValidator;
     private final MissionUploadRepository missionUploadRepository;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public AnalysisTaskAcceptedResponse createMissionTask(Long userId, Long walkId) {
@@ -91,6 +94,7 @@ public class ExternalAnalysisTaskService {
                             .dog(walk.getDog())
                             .build()
             );
+            eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             ExternalAnalysisTask existing = externalAnalysisTaskRepository
@@ -115,6 +119,7 @@ public class ExternalAnalysisTaskService {
                             .dog(dog)
                             .build()
             );
+            eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             ExternalAnalysisTask existing = externalAnalysisTaskRepository
