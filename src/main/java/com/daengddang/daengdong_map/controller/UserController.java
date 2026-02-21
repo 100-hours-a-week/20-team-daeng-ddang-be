@@ -23,6 +23,7 @@ import com.daengddang.daengdong_map.service.RegionService;
 import com.daengddang.daengdong_map.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,7 @@ public class UserController implements UserApi {
     private final DogService dogService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @Override
     public ApiResponse<UserRegisterResponse> registerUserInfo(
             @AuthenticationPrincipal AuthUser authUser,
@@ -138,6 +140,7 @@ public class UserController implements UserApi {
     }
 
     @PostMapping("/dogs")
+    @ResponseStatus(HttpStatus.CREATED)
     @Override
     public ApiResponse<DogRegisterResponse> registerDog(
             @AuthenticationPrincipal AuthUser authUser,

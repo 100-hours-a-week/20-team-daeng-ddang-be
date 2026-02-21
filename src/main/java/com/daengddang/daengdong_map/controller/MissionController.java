@@ -12,6 +12,7 @@ import com.daengddang.daengdong_map.service.MissionJudgeService;
 import com.daengddang.daengdong_map.service.MissionUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,6 +49,7 @@ public class MissionController implements MissionApi {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @Override
     public ApiResponse<MissionUploadResponse> saveUpload(
             @AuthenticationPrincipal AuthUser authUser,
