@@ -85,6 +85,8 @@ public enum ErrorCode {
             "이미 분석이 진행 중이거나 완료된 산책입니다."),
     MISSION_ALREADY_ANALYZED(HttpStatus.CONFLICT,
             "이미 돌발 미션 분석이 완료된 영상입니다."),
+    MISSION_UPLOAD_LIMIT_EXCEEDED(HttpStatus.CONFLICT,
+            "돌발 미션 업로드는 산책당 최대 3개까지 가능합니다."),
     DOG_FACE_NOT_RECOGNIZED(HttpStatus.UNPROCESSABLE_ENTITY,
             "영상에서 강아지 얼굴을 인식할 수 없습니다."),
     CHAT_ANALYSIS_NOT_SUPPORTED(HttpStatus.UNPROCESSABLE_ENTITY,
