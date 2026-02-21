@@ -36,6 +36,17 @@ public class MissionController implements MissionApi {
         return ApiResponse.success(SuccessCode.MISSION_ANALYSIS_COMPLETED, response);
     }
 
+    @GetMapping("/analysis")
+    @Override
+    public ApiResponse<MissionJudgeResponse> getMissionAnalysis(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long walkId
+    ) {
+        MissionJudgeResponse response =
+                missionJudgeService.getResult(authUser.getUserId(), walkId);
+        return ApiResponse.success(SuccessCode.MISSION_ANALYSIS_RESULT_RETRIEVED, response);
+    }
+
     @PostMapping
     @Override
     public ApiResponse<MissionUploadResponse> saveUpload(
