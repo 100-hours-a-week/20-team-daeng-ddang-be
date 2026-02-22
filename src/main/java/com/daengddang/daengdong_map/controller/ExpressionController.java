@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,5 +39,16 @@ public class ExpressionController implements ExpressionApi {
         ExpressionAnalyzeResponse response =
                 expressionAnalyzeService.analyze(authUser.getUserId(), walkId, dto);
         return ApiResponse.success(SuccessCode.EMOTION_ANALYSIS_RESULT_CREATED, response);
+    }
+
+    @GetMapping("/analysis")
+    @Override
+    public ApiResponse<ExpressionAnalyzeResponse> getAnalysis(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long walkId
+    ) {
+        ExpressionAnalyzeResponse response =
+                expressionAnalyzeService.getAnalysis(authUser.getUserId(), walkId);
+        return ApiResponse.success(SuccessCode.EMOTION_ANALYSIS_RESULT_RETRIEVED, response);
     }
 }

@@ -60,6 +60,14 @@ public class ExpressionAnalyzeService {
         return toResponse(fastApiResponse, analysisId);
     }
 
+    @Transactional(readOnly = true)
+    public ExpressionAnalyzeResponse getAnalysis(Long userId, Long walkId) {
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
+        Expression expression = expressionRepository.findByWalk(walk)
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
+        return toResponse(expression);
+    }
+
     private Expression toExpression(
             FastApiExpressionAnalyzeResponse response,
             String videoUrl,
@@ -131,6 +139,24 @@ public class ExpressionAnalyzeService {
                 response.getVideoUrl(),
                 response.getSummary(),
                 responseProbabilities
+        );
+    }
+
+    private ExpressionAnalyzeResponse toResponse(Expression expression) {
+        ExpressionAnalyzeResponse.EmotionProbabilities probabilities =
+                ExpressionAnalyzeResponse.EmotionProbabilities.from(
+                        expression.getAngry(),
+                        expression.getHappy(),
+                        expression.getSad(),
+                        expression.getRelaxed()
+                );
+
+        return ExpressionAnalyzeResponse.from(
+                String.valueOf(expression.getId()),
+                expression.getPredictedEmotion(),
+                expression.getVideoUrl(),
+                expression.getSummary(),
+                probabilities
         );
     }
 }

@@ -41,4 +41,20 @@ public interface ExpressionApi {
             @PathVariable Long walkId,
             @RequestBody ExpressionAnalyzeRequest dto
     );
+
+    @Operation(summary = "Get expression analysis result")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND")
+    })
+    @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
+            com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
+    })
+    ApiResponse<ExpressionAnalyzeResponse> getAnalysis(
+            @Parameter(hidden = true) AuthUser authUser,
+            @PathVariable Long walkId
+    );
 }
