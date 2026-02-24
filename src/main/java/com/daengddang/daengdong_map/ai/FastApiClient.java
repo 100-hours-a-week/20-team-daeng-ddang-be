@@ -2,9 +2,11 @@ package com.daengddang.daengdong_map.ai;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
+import com.daengddang.daengdong_map.dto.request.chat.FastApiHealthcareChatRequest;
 import com.daengddang.daengdong_map.dto.request.expression.FastApiExpressionAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.request.healthcare.FastApiHealthcareAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.request.mission.FastApiMissionJudgeRequest;
+import com.daengddang.daengdong_map.dto.response.chat.FastApiHealthcareChatResponse;
 import com.daengddang.daengdong_map.dto.response.expression.FastApiExpressionAnalyzeResponse;
 import com.daengddang.daengdong_map.dto.response.healthcare.FastApiHealthcareAnalyzeResponse;
 import com.daengddang.daengdong_map.dto.response.mission.FastApiMissionJudgeResponse;
@@ -54,6 +56,19 @@ public class FastApiClient {
                     .body(request)
                     .retrieve()
                     .body(FastApiHealthcareAnalyzeResponse.class);
+        } catch (Exception e) {
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+        }
+    }
+
+    public FastApiHealthcareChatResponse requestHealthcareChat(FastApiHealthcareChatRequest request) {
+        try {
+            return restClient.post()
+                    .uri(fastApiProperties.getHealthcareChatUri())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(FastApiHealthcareChatResponse.class);
         } catch (Exception e) {
             throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
         }
