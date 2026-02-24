@@ -1,9 +1,7 @@
 package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.SuccessCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.controller.api.RegionRankingApi;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingCursorRequest;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingPeriodRequest;
@@ -34,10 +32,6 @@ public class RegionRankingController implements RegionRankingApi {
             @RequestParam String periodValue,
             @RequestParam(required = false) Long regionId
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -45,7 +39,7 @@ public class RegionRankingController implements RegionRankingApi {
                 .build();
 
         RegionRankingSummaryResponse response = regionRankingService
-                .getRegionRankingSummary(authUser.getUserId(), dto);
+                .getRegionRankingSummary(authUser != null ? authUser.getUserId() : null, dto);
 
         return ApiResponse.success(SuccessCode.REGION_RANKING_SUMMARY_RETRIEVED, response);
     }
@@ -59,10 +53,6 @@ public class RegionRankingController implements RegionRankingApi {
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRequest dto = RankingPeriodRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -74,7 +64,7 @@ public class RegionRankingController implements RegionRankingApi {
                 .build();
 
         RegionRankingListResponse response = regionRankingService
-                .getRegionRankingList(authUser.getUserId(), dto, cursorDto);
+                .getRegionRankingList(authUser != null ? authUser.getUserId() : null, dto, cursorDto);
 
         return ApiResponse.success(SuccessCode.REGION_RANKING_LIST_RETRIEVED, response);
     }

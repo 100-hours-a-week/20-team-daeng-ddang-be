@@ -1,9 +1,7 @@
 package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.SuccessCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.controller.api.RegionContributionRankingApi;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingCursorRequest;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingPeriodRegionRequest;
@@ -33,10 +31,6 @@ public class RegionContributionRankingController implements RegionContributionRa
             @RequestParam String periodValue,
             @RequestParam Long regionId
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -44,7 +38,7 @@ public class RegionContributionRankingController implements RegionContributionRa
                 .build();
 
         RegionContributionRankingSummaryResponse response = regionContributionRankingService
-                .getRegionContributionRankingSummary(authUser.getUserId(), dto);
+                .getRegionContributionRankingSummary(authUser != null ? authUser.getUserId() : null, dto);
 
         return ApiResponse.success(SuccessCode.REGION_CONTRIBUTION_RANKING_SUMMARY_RETRIEVED, response);
     }
@@ -59,10 +53,6 @@ public class RegionContributionRankingController implements RegionContributionRa
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -75,7 +65,7 @@ public class RegionContributionRankingController implements RegionContributionRa
                 .build();
 
         RegionContributionRankingListResponse response = regionContributionRankingService
-                .getRegionContributionRankingList(authUser.getUserId(), dto, cursorDto);
+                .getRegionContributionRankingList(authUser != null ? authUser.getUserId() : null, dto, cursorDto);
 
         return ApiResponse.success(SuccessCode.REGION_CONTRIBUTION_RANKING_LIST_RETRIEVED, response);
     }

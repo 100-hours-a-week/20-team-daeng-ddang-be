@@ -39,7 +39,7 @@ public class RegionContributionRankingService {
         rankingRequestValidator.validateRequestWithRegionId(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
         regionValidator.validateActiveRegion(dto.getRegionId());
-        Dog dog = accessValidator.getDogOrThrow(userId);
+        Dog dog = userId != null ? accessValidator.getDogOrThrow(userId) : null;
 
         List<RegionContributionRankItemResponse> topRanks = regionDogRankRepository
                 .findRanks(periodType, dto.getPeriodValue(), dto.getRegionId(), PageRequest.of(0, SUMMARY_TOP_LIMIT))
@@ -47,7 +47,9 @@ public class RegionContributionRankingService {
                 .map(this::toContributionItem)
                 .toList();
 
-        RegionContributionRankItemResponse myRank = regionDogRankRepository
+        RegionContributionRankItemResponse myRank = dog == null
+                ? null
+                : regionDogRankRepository
                 .findMyRank(periodType, dto.getPeriodValue(), dto.getRegionId(), dog.getId())
                 .map(this::toContributionItem)
                 .orElse(null);
@@ -61,7 +63,6 @@ public class RegionContributionRankingService {
         rankingRequestValidator.validateRequestWithRegionId(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
         regionValidator.validateActiveRegion(dto.getRegionId());
-        accessValidator.getDogOrThrow(userId);
 
         String cursor = rankingRequestValidator.resolveCursor(cursorDto);
         int limit = rankingRequestValidator.resolveLimit(cursorDto);

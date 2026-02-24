@@ -39,7 +39,7 @@ public class PersonalRankingService {
     public PersonalRankingSummaryResponse getPersonalRankingSummary(Long userId, RankingPeriodRegionRequest dto) {
         rankingRequestValidator.validateRequestNotNull(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
-        Dog dog = accessValidator.getDogOrThrow(userId);
+        Dog dog = userId != null ? accessValidator.getDogOrThrow(userId) : null;
         Long regionId = dto.getRegionId();
 
         List<PersonalRankItemResponse> topRanks;
@@ -51,7 +51,9 @@ public class PersonalRankingService {
                     .map(this::toPersonalRankItem)
                     .toList();
 
-            myRank = dogGlobalRankRepository
+            myRank = dog == null
+                    ? null
+                    : dogGlobalRankRepository
                     .findMyRank(periodType, dto.getPeriodValue(), dog.getId())
                     .map(this::toPersonalRankItem)
                     .orElse(null);
@@ -63,7 +65,9 @@ public class PersonalRankingService {
                     .map(this::toPersonalRankItem)
                     .toList();
 
-            myRank = dogRankRepository
+            myRank = dog == null
+                    ? null
+                    : dogRankRepository
                     .findMyRank(periodType, dto.getPeriodValue(), regionId, dog.getId())
                     .map(this::toPersonalRankItem)
                     .orElse(null);
@@ -77,7 +81,6 @@ public class PersonalRankingService {
                                                               RankingCursorRequest cursorRequest) {
         rankingRequestValidator.validateRequestNotNull(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
-        accessValidator.getDogOrThrow(userId);
 
         Long regionId = dto.getRegionId();
         if (regionId != null) {

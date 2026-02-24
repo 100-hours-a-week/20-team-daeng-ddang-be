@@ -41,7 +41,7 @@ public class RegionRankingService {
     public RegionRankingSummaryResponse getRegionRankingSummary(Long userId, RankingPeriodRegionRequest dto) {
         rankingRequestValidator.validateRequestNotNull(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
-        User user = accessValidator.getUserOrThrow(userId);
+        User user = userId != null ? accessValidator.getUserOrThrow(userId) : null;
 
         Long regionId = resolveRegionId(user, dto.getRegionId());
 
@@ -51,7 +51,9 @@ public class RegionRankingService {
                 .map(this::toRegionRankItem)
                 .toList();
 
-        RegionRankItemResponse myRank = regionRankRepository
+        RegionRankItemResponse myRank = regionId == null
+                ? null
+                : regionRankRepository
                 .findMyRegionRank(periodType, dto.getPeriodValue(), regionId)
                 .map(this::toRegionRankItem)
                 .orElse(null);
@@ -64,7 +66,6 @@ public class RegionRankingService {
                                                           RankingCursorRequest cursorDto) {
         rankingRequestValidator.validateRequestNotNull(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
-        accessValidator.getUserOrThrow(userId);
 
         String cursor = rankingRequestValidator.resolveCursor(cursorDto);
         int limit = rankingRequestValidator.resolveLimit(cursorDto);
@@ -92,6 +93,9 @@ public class RegionRankingService {
         if (requestedRegionId != null) {
             regionValidator.validateActiveRegion(requestedRegionId);
             return requestedRegionId;
+        }
+        if (user == null) {
+            return null;
         }
 
         Region userRegion = user.getRegion();

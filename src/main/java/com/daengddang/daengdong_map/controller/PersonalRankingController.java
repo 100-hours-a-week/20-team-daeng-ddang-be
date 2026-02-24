@@ -1,9 +1,7 @@
 package com.daengddang.daengdong_map.controller;
 
 import com.daengddang.daengdong_map.common.ApiResponse;
-import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.SuccessCode;
-import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.controller.api.PersonalRankingApi;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingCursorRequest;
 import com.daengddang.daengdong_map.dto.request.ranking.RankingPeriodRegionRequest;
@@ -33,10 +31,6 @@ public class PersonalRankingController implements PersonalRankingApi {
             @RequestParam String periodValue,
             @RequestParam(required = false) Long regionId
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -44,7 +38,7 @@ public class PersonalRankingController implements PersonalRankingApi {
                 .build();
 
         PersonalRankingSummaryResponse response = personalRankingService
-                .getPersonalRankingSummary(authUser.getUserId(), dto);
+                .getPersonalRankingSummary(authUser != null ? authUser.getUserId() : null, dto);
 
         return ApiResponse.success(SuccessCode.PERSONAL_RANKING_SUMMARY_RETRIEVED, response);
     }
@@ -59,10 +53,6 @@ public class PersonalRankingController implements PersonalRankingApi {
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer limit
     ) {
-        if (authUser == null) {
-            throw new BaseException(ErrorCode.UNAUTHORIZED);
-        }
-
         RankingPeriodRegionRequest dto = RankingPeriodRegionRequest.builder()
                 .periodType(periodType)
                 .periodValue(periodValue)
@@ -75,7 +65,7 @@ public class PersonalRankingController implements PersonalRankingApi {
                 .build();
 
         PersonalRankingListResponse response = personalRankingService
-                .getPersonalRankingList(authUser.getUserId(), dto, cursorRequest);
+                .getPersonalRankingList(authUser != null ? authUser.getUserId() : null, dto, cursorRequest);
 
         return ApiResponse.success(SuccessCode.PERSONAL_RANKING_LIST_RETRIEVED, response);
     }
