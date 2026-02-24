@@ -20,6 +20,9 @@ FROM eclipse-temurin:21-jre AS runtime
 
 WORKDIR /app
 
-COPY --from=build /app/build/libs/*.jar /app/app.jar
+RUN groupadd -g 10001 app && useradd -m -u 10001 -g 10001 -s /usr/sbin/nologin app
 
+COPY --from=build --chown=app:app /app/build/libs/*.jar /app/app.jar
+
+USER 10001:10001
 ENTRYPOINT [ "java", "-jar", "/app/app.jar" ]
