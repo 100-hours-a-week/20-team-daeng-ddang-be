@@ -1,4 +1,5 @@
-FROM eclipse-temurin:21-jdk
+# Build Stage
+FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
@@ -6,4 +7,11 @@ COPY . .
 
 RUN chmod +x ./gradlew && ./gradlew -x test build
 
-ENTRYPOINT [ "java", "-jar", "build/libs/daengdong-map-0.0.1-SNAPSHOT.jar" ]
+# Runtime Stage
+FROM eclipse-temurin:21-jre AS runtime
+
+WORKDIR /app
+
+COPY --from=build /app/build/libs/*.jar /app/app.jar
+
+ENTRYPOINT [ "java", "-jar", "/app/app.jar" ]
