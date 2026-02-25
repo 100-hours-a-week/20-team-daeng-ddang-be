@@ -104,3 +104,6 @@ cache:
     key: ${CACHE_MISSION_KEY:cache:missions:all}
     operation-timeout-ms: ${CACHE_MISSION_OPERATION_TIMEOUT_MS:${CACHE_DEFAULT_OPERATION_TIMEOUT_MS:300}}
     key-version: ${CACHE_MISSION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
+  breed:
+    key: ${CACHE_BREED_KEY:cache:breeds:all}
+    key-version: ${CACHE_BREED_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
