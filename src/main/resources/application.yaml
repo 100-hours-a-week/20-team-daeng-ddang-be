@@ -99,8 +99,8 @@ cache:
     ttl-seconds: ${CACHE_DEFAULT_TTL_SECONDS:1800}
     jitter-percent: ${CACHE_DEFAULT_JITTER_PERCENT:20}
     operation-timeout-ms: ${CACHE_DEFAULT_OPERATION_TIMEOUT_MS:300}
-    key-version: ${CACHE_DEFAULT_KEY_VERSION:v1}
+    key-version: ${CACHE_DEFAULT_KEY_VERSION:v2}
   mission:
     key: ${CACHE_MISSION_KEY:cache:missions:all}
     operation-timeout-ms: ${CACHE_MISSION_OPERATION_TIMEOUT_MS:${CACHE_DEFAULT_OPERATION_TIMEOUT_MS:300}}
-    key-version: ${CACHE_MISSION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v1}}
+    key-version: ${CACHE_MISSION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}

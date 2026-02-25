@@ -15,5 +15,5 @@ public class CacheDefaultProperties {
     private long ttlSeconds = 1800;
     private int jitterPercent = 20;
     private long operationTimeoutMs = 300;
-    private String keyVersion = "v1";
+    private String keyVersion = "v2";
 }

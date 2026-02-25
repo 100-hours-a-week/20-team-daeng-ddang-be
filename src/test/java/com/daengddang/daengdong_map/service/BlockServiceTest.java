@@ -3,20 +3,17 @@ package com.daengddang.daengdong_map.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.daengddang.daengdong_map.util.BlockIdUtil;
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
-import com.daengddang.daengdong_map.domain.block.Block;
-import com.daengddang.daengdong_map.domain.block.BlockOwnership;
-import com.daengddang.daengdong_map.domain.breed.Breed;
-import com.daengddang.daengdong_map.domain.dog.Dog;
-import com.daengddang.daengdong_map.domain.user.User;
 import com.daengddang.daengdong_map.dto.response.block.NearbyBlockListResponse;
 import com.daengddang.daengdong_map.dto.response.block.NearbyBlockResponse;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
+import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -25,7 +22,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BlockServiceTest {
@@ -60,18 +56,11 @@ class BlockServiceTest {
         double lng = BlockIdUtil.BLOCK_SIZE * 2.0;
         int radiusMeters = 160;
 
-        User user = User.builder().kakaoUserId(1L).build();
-        Breed breed = Breed.builder().name("mix").build();
-        Dog dog = Dog.builder().name("coco").user(user).breed(breed).build();
-        ReflectionTestUtils.setField(dog, "id", 99L);
-
-        Block block = Block.builder().x(2).y(3).build();
-        BlockOwnership ownership = BlockOwnership.builder()
-                .block(block)
-                .dog(dog)
-                .acquiredAt(LocalDateTime.of(2025, 1, 1, 0, 0))
-                .lastPassedAt(LocalDateTime.of(2025, 1, 1, 0, 0))
-                .build();
+        BlockOwnershipView ownership = mock(BlockOwnershipView.class);
+        when(ownership.getBlockX()).thenReturn(2);
+        when(ownership.getBlockY()).thenReturn(3);
+        when(ownership.getDogId()).thenReturn(99L);
+        when(ownership.getAcquiredAt()).thenReturn(LocalDateTime.of(2025, 1, 1, 0, 0));
 
         when(blockOwnershipRepository.findAllByBlockRange(anyInt(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(List.of(ownership));

@@ -33,14 +33,13 @@ public class MissionCacheStore {
 
     public Optional<MissionListResponse> get() {
         if (!isEnabled()) {
-            metrics.recordFallback();
+            metrics.recordBypassDisabled();
             return Optional.empty();
         }
 
         try {
             RBucket<String> bucket = redissonClient.getBucket(resolveCacheKey(), StringCodec.INSTANCE);
-            String cachedJson = bucket.getAsync().toCompletableFuture()
-                    .get(resolveOperationTimeoutMs(), TimeUnit.MILLISECONDS);
+            String cachedJson = bucket.get();
             if (cachedJson == null || cachedJson.isBlank()) {
                 metrics.recordMiss();
                 return Optional.empty();
@@ -51,8 +50,8 @@ public class MissionCacheStore {
             return Optional.of(cached);
         } catch (Exception e) {
             metrics.recordReadError();
-            metrics.recordFallback();
-            log.warn("Mission cache read failed. fallback to DB", e);
+            metrics.recordFallbackError();
+            log.warn("미션 캐시 조회 실패 (Mission cache read failed)", e);
             return Optional.empty();
         }
     }
@@ -65,11 +64,16 @@ public class MissionCacheStore {
         try {
             String responseJson = objectMapper.writeValueAsString(toPayload(response));
             RBucket<String> bucket = redissonClient.getBucket(resolveCacheKey(), StringCodec.INSTANCE);
-            bucket.setAsync(responseJson, resolveTtlSeconds(), TimeUnit.SECONDS).toCompletableFuture()
-                    .get(resolveOperationTimeoutMs(), TimeUnit.MILLISECONDS);
+            bucket.setAsync(responseJson, resolveTtlSeconds(), TimeUnit.SECONDS)
+                    .whenComplete((result, throwable) -> {
+                        if (throwable != null) {
+                            metrics.recordWriteError();
+                            log.warn("미션 캐시 비동기 저장 실패 (Mission cache async write failed)", throwable);
+                        }
+                    });
         } catch (Exception e) {
             metrics.recordWriteError();
-            log.warn("Mission cache write failed. ignore and continue", e);
+            log.warn("미션 캐시 저장 실패 (Mission cache write failed)", e);
         }
     }
 
@@ -80,7 +84,7 @@ public class MissionCacheStore {
         int jitterPercent = properties.getJitterPercent() == null
                 ? defaultProperties.getJitterPercent()
                 : properties.getJitterPercent();
-        jitterPercent = Math.max(0, jitterPercent);
+        jitterPercent = Math.max(0, Math.min(100, jitterPercent));
         if (jitterPercent == 0 || base <= 0) {
             return Math.max(1, base);
         }
@@ -106,13 +110,6 @@ public class MissionCacheStore {
             return properties.getKey();
         }
         return version + ":" + properties.getKey();
-    }
-
-    private long resolveOperationTimeoutMs() {
-        long timeout = properties.getOperationTimeoutMs() == null
-                ? defaultProperties.getOperationTimeoutMs()
-                : properties.getOperationTimeoutMs();
-        return Math.max(50L, timeout);
     }
 
     private MissionCachePayload toPayload(MissionListResponse response) {
