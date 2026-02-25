@@ -17,4 +17,8 @@ public class BreedResponse {
     public static BreedResponse from(Breed breed) {
         return new BreedResponse(breed.getId(), breed.getName());
     }
+
+    public static BreedResponse of(Long breedId, String name) {
+        return new BreedResponse(breedId, name);
+    }
 }
