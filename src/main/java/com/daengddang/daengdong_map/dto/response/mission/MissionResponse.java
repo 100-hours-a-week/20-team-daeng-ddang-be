@@ -39,4 +39,20 @@ public class MissionResponse {
                 mission.getCreatedAt()
         );
     }
+
+    public static MissionResponse of(Long missionId,
+                                     String title,
+                                     String description,
+                                     MissionDifficulty difficulty,
+                                     String missionType,
+                                     LocalDateTime createdAt) {
+        return new MissionResponse(
+                missionId,
+                title,
+                description,
+                difficulty,
+                missionType,
+                createdAt
+        );
+    }
 }

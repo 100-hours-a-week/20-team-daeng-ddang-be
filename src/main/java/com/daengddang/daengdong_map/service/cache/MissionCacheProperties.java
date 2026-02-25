@@ -1,0 +1,20 @@
+package com.daengddang.daengdong_map.service.cache;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Getter
+@Setter
+@Component
+@ConfigurationProperties(prefix = "cache.mission")
+public class MissionCacheProperties {
+
+    private Boolean enabled;
+    private Long ttlSeconds;
+    private Integer jitterPercent;
+    private Long operationTimeoutMs;
+    private String keyVersion;
+    private String key = "cache:missions:all";
+}
