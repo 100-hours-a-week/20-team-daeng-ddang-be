@@ -19,4 +19,8 @@ public class RegionListResponse {
                 .toList();
         return new RegionListResponse(responses);
     }
+
+    public static RegionListResponse of(List<RegionResponse> regions) {
+        return new RegionListResponse(regions);
+    }
 }

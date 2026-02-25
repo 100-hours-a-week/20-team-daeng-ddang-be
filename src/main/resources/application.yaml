@@ -107,3 +107,6 @@ cache:
   breed:
     key: ${CACHE_BREED_KEY:cache:breeds:all}
     key-version: ${CACHE_BREED_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
+  region:
+    key: ${CACHE_REGION_KEY:cache:regions}
+    key-version: ${CACHE_REGION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}

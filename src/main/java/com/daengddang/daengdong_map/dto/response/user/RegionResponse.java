@@ -26,4 +26,8 @@ public class RegionResponse {
         Long parentId = region.getParent() == null ? null : region.getParent().getId();
         return new RegionResponse(region.getId(), region.getName(), region.getLevel(), parentId);
     }
+
+    public static RegionResponse of(Long regionId, String name, RegionLevel level, Long parentRegionId) {
+        return new RegionResponse(regionId, name, level, parentRegionId);
+    }
 }
