@@ -4,8 +4,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RMapCache;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,7 +19,7 @@ public class WalkRuntimeStateRegistry {
     private final RedissonClient redissonClient;
 
     public SyncState getSyncState(Long walkId) {
-        RMapCache<String, String> map = redissonClient.getMapCache(syncKey(walkId));
+        RMap<String, String> map = redissonClient.getMap(syncKey(walkId), StringCodec.INSTANCE);
         String areaKey = map.get("areaKey");
         String lastSyncedAt = map.get("lastSyncedAt");
         if (areaKey == null || lastSyncedAt == null) {
@@ -28,14 +29,14 @@ public class WalkRuntimeStateRegistry {
     }
 
     public void putSyncState(Long walkId, SyncState state) {
-        RMapCache<String, String> map = redissonClient.getMapCache(syncKey(walkId));
+        RMap<String, String> map = redissonClient.getMap(syncKey(walkId), StringCodec.INSTANCE);
         map.fastPut("areaKey", state.getAreaKey());
         map.fastPut("lastSyncedAt", state.getLastSyncedAt().toString());
         map.expire(SYNC_TTL);
     }
 
     public StayState getStayState(Long walkId) {
-        RMapCache<String, String> map = redissonClient.getMapCache(stayKey(walkId));
+        RMap<String, String> map = redissonClient.getMap(stayKey(walkId), StringCodec.INSTANCE);
         String blockId = map.get("blockId");
         String enteredAt = map.get("enteredAt");
         String lastSeenAt = map.get("lastSeenAt");
@@ -48,7 +49,7 @@ public class WalkRuntimeStateRegistry {
     }
 
     public void putStayState(Long walkId, StayState state) {
-        RMapCache<String, String> map = redissonClient.getMapCache(stayKey(walkId));
+        RMap<String, String> map = redissonClient.getMap(stayKey(walkId), StringCodec.INSTANCE);
         map.fastPut("blockId", state.getBlockId());
         map.fastPut("enteredAt", state.getEnteredAt().toString());
         map.fastPut("lastSeenAt", state.getLastSeenAt().toString());
