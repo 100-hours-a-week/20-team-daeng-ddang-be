@@ -46,10 +46,14 @@ public class ExternalAnalysisTaskProcessor {
             String code = ex.getErrorCode().name();
             log.warn("외부 분석 작업 처리 실패(BaseException). taskId={}, type={}, errorCode={}, message={}",
                     taskId, task.getType(), code, ex.getMessage(), ex);
-            externalAnalysisTaskStateService.markFail(taskId, code, ex.getMessage());
+            externalAnalysisTaskStateService.markFail(taskId, code, ex.getErrorCode().getMessage());
         } catch (Exception ex) {
-            externalAnalysisTaskStateService.markFail(taskId, ErrorCode.INTERNAL_SERVER_ERROR.name(), ex.getMessage());
             log.error("외부 분석 작업 처리 중 예외. taskId={}, type={}", taskId, task.getType(), ex);
+            externalAnalysisTaskStateService.markFail(
+                    taskId,
+                    ErrorCode.INTERNAL_SERVER_ERROR.name(),
+                    ErrorCode.INTERNAL_SERVER_ERROR.getMessage()
+            );
         }
     }
 

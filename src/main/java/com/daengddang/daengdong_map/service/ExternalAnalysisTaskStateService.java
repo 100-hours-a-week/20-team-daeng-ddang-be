@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ExternalAnalysisTaskStateService {
 
+    private static final int ERROR_MESSAGE_MAX_LENGTH = 1000;
+
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -46,7 +48,17 @@ public class ExternalAnalysisTaskStateService {
                 ExternalAnalysisTaskStatus.FAIL,
                 LocalDateTime.now(),
                 errorCode,
-                errorMessage
+                sanitizeErrorMessage(errorMessage)
         );
+    }
+
+    private String sanitizeErrorMessage(String errorMessage) {
+        if (errorMessage == null) {
+            return null;
+        }
+        if (errorMessage.length() <= ERROR_MESSAGE_MAX_LENGTH) {
+            return errorMessage;
+        }
+        return errorMessage.substring(0, ERROR_MESSAGE_MAX_LENGTH);
     }
 }
