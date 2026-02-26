@@ -71,6 +71,12 @@ public class HealthcareChatService {
     private void validateFastApiResponse(FastApiHealthcareChatResponse response,
                                          ChatSession session,
                                          String requestedConversationId) {
+        if (response != null
+                && response.getErrorCode() != null
+                && !response.getErrorCode().isBlank()) {
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+        }
+
         if (response == null
                 || response.getDogId() == null
                 || response.getConversationId() == null

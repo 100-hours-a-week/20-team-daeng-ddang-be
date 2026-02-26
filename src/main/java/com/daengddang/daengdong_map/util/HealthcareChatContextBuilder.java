@@ -25,7 +25,7 @@ public class HealthcareChatContextBuilder {
         return FastApiHealthcareChatRequest.of(
                 Math.toIntExact(session.getDogId()),
                 session.getConversationId(),
-                request.getMessage(),
+                FastApiHealthcareChatRequest.Message.of("user", request.getMessage()),
                 request.getImageUrl(),
                 userContext,
                 Collections.emptyList()

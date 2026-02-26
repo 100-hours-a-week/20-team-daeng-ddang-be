@@ -21,6 +21,9 @@ public class FastApiHealthcareChatResponse {
 
     private List<Citation> citations;
 
+    @JsonProperty("error_code")
+    private String errorCode;
+
     @Getter
     public static class Citation {
         @JsonProperty("doc_id")

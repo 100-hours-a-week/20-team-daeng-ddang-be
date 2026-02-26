@@ -17,8 +17,8 @@ public class FastApiHealthcareChatRequest {
     @NotBlank
     private String conversationId;
 
-    @NotBlank
-    private String message;
+    @NotNull
+    private Message message;
 
     @JsonProperty("image_url")
     private String imageUrl;
@@ -32,7 +32,7 @@ public class FastApiHealthcareChatRequest {
 
     private FastApiHealthcareChatRequest(Integer dogId,
                                          String conversationId,
-                                         String message,
+                                         Message message,
                                          String imageUrl,
                                          UserContext userContext,
                                          List<HistoryItem> history) {
@@ -46,7 +46,7 @@ public class FastApiHealthcareChatRequest {
 
     public static FastApiHealthcareChatRequest of(Integer dogId,
                                                   String conversationId,
-                                                  String message,
+                                                  Message message,
                                                   String imageUrl,
                                                   UserContext userContext,
                                                   List<HistoryItem> history) {
@@ -58,6 +58,25 @@ public class FastApiHealthcareChatRequest {
                 userContext,
                 history
         );
+    }
+
+    @Getter
+    public static class Message {
+
+        @NotBlank
+        private String role;
+
+        @NotBlank
+        private String content;
+
+        private Message(String role, String content) {
+            this.role = role;
+            this.content = content;
+        }
+
+        public static Message of(String role, String content) {
+            return new Message(role, content);
+        }
     }
 
     @Getter
