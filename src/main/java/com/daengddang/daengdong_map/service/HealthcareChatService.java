@@ -73,7 +73,6 @@ public class HealthcareChatService {
     private void validateFastApiResponse(FastApiHealthcareChatResponse response,
                                          ChatSession session,
                                          String requestedConversationId) {
-        log.info("response: {}", response.getAnswer());
         if (response != null
                 && response.getErrorCode() != null
                 && !response.getErrorCode().isBlank()) {
