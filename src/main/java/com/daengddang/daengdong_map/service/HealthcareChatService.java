@@ -14,10 +14,12 @@ import com.daengddang.daengdong_map.service.chat.session.ChatSessionStore;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class HealthcareChatService {
@@ -71,6 +73,7 @@ public class HealthcareChatService {
     private void validateFastApiResponse(FastApiHealthcareChatResponse response,
                                          ChatSession session,
                                          String requestedConversationId) {
+        log.info("response: {}", response);
         if (response != null
                 && response.getErrorCode() != null
                 && !response.getErrorCode().isBlank()) {
