@@ -126,10 +126,10 @@ public class HealthcareMapper {
         );
     }
 
-    private LocalDateTime toLocalDateTime(java.time.OffsetDateTime analyzedAt) {
+    private LocalDateTime toLocalDateTime(LocalDateTime analyzedAt) {
         if (analyzedAt == null) {
             return LocalDateTime.now();
         }
-        return analyzedAt.toLocalDateTime();
+        return analyzedAt;
     }
 }

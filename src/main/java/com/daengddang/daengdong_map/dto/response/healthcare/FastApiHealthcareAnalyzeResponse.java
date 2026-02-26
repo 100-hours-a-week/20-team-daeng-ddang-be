@@ -1,7 +1,7 @@
 package com.daengddang.daengdong_map.dto.response.healthcare;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import lombok.Getter;
 
 @Getter
@@ -14,7 +14,7 @@ public class FastApiHealthcareAnalyzeResponse {
     private Integer dogId;
 
     @JsonProperty("analyze_at")
-    private OffsetDateTime analyzeAt;
+    private LocalDateTime analyzeAt;
 
     private Result result;
     private Metrics metrics;
