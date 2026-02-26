@@ -4,24 +4,17 @@ import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class RegionDogRankBatchRepositoryImpl implements RegionDogRankBatchRepository {
 
-    private static final String PERIOD_FILTER = """
-            (
-                (:periodType = 'YEAR' and to_char(w.ended_at, 'YYYY') = :periodValue)
-                or (:periodType = 'MONTH' and to_char(w.ended_at, 'YYYY-MM') = :periodValue)
-                or (:periodType = 'WEEK' and (to_char(w.ended_at, 'IYYY') || '-W' || to_char(w.ended_at, 'IW')) = :periodValue)
-            )
-            """;
-
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
-    public int upsertRanks(RankingPeriodType periodType, String periodValue) {
+    public int upsertRanks(RankingPeriodType periodType, String periodValue, LocalDateTime startAt, LocalDateTime endAt) {
         Query query = entityManager.createNativeQuery("""
                 with dog_region_aggregated as (
                     select
@@ -37,7 +30,8 @@ public class RegionDogRankBatchRepositoryImpl implements RegionDogRankBatchRepos
                       and u.region_id is not null
                       and d.status = 'ACTIVE'
                       and u.status = 'ACTIVE'
-                      and """ + PERIOD_FILTER + """
+                      and w.ended_at >= :startAt
+                      and w.ended_at < :endAt
                     group by d.dog_id, u.region_id
                 ), region_total as (
                     select
@@ -92,12 +86,12 @@ public class RegionDogRankBatchRepositoryImpl implements RegionDogRankBatchRepos
                     contribution_rate = excluded.contribution_rate,
                     ranking = excluded.ranking
                 """);
-        bindCommonParams(query, periodType, periodValue);
+        bindCommonParams(query, periodType, periodValue, startAt, endAt);
         return query.executeUpdate();
     }
 
     @Override
-    public int deleteObsoleteRanks(RankingPeriodType periodType, String periodValue) {
+    public int deleteObsoleteRanks(RankingPeriodType periodType, String periodValue, LocalDateTime startAt, LocalDateTime endAt) {
         Query query = entityManager.createNativeQuery("""
                 delete from region_dog_rank rdr
                 where rdr.period_type = :periodType
@@ -115,15 +109,24 @@ public class RegionDogRankBatchRepositoryImpl implements RegionDogRankBatchRepos
                       and u.region_id is not null
                       and d.status = 'ACTIVE'
                       and u.status = 'ACTIVE'
-                      and """ + PERIOD_FILTER + """
+                      and w.ended_at >= :startAt
+                      and w.ended_at < :endAt
                 )
                 """);
-        bindCommonParams(query, periodType, periodValue);
+        bindCommonParams(query, periodType, periodValue, startAt, endAt);
         return query.executeUpdate();
     }
 
-    private void bindCommonParams(Query query, RankingPeriodType periodType, String periodValue) {
+    private void bindCommonParams(
+            Query query,
+            RankingPeriodType periodType,
+            String periodValue,
+            LocalDateTime startAt,
+            LocalDateTime endAt
+    ) {
         query.setParameter("periodType", periodType.name());
         query.setParameter("periodValue", periodValue);
+        query.setParameter("startAt", startAt);
+        query.setParameter("endAt", endAt);
     }
 }
