@@ -31,7 +31,7 @@ public class FastApiClient {
                     .retrieve()
                     .body(FastApiMissionJudgeResponse.class);
         } catch (Exception e) {
-            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED, e);
         }
     }
 
@@ -44,7 +44,7 @@ public class FastApiClient {
                     .retrieve()
                     .body(FastApiExpressionAnalyzeResponse.class);
         } catch (Exception e) {
-            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED, e);
         }
     }
 
@@ -57,7 +57,7 @@ public class FastApiClient {
                     .retrieve()
                     .body(FastApiHealthcareAnalyzeResponse.class);
         } catch (Exception e) {
-            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED, e);
         }
     }
 
@@ -70,7 +70,7 @@ public class FastApiClient {
                     .retrieve()
                     .body(FastApiHealthcareChatResponse.class);
         } catch (Exception e) {
-            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED);
+            throw new BaseException(ErrorCode.AI_SERVER_CONNECTION_FAILED, e);
         }
     }
 }
