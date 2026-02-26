@@ -25,4 +25,10 @@ public class RankingBatchScheduler {
         log.debug("Trigger ranking cleanup batch scheduler");
         rankingBatchService.runCleanupAll();
     }
+
+    @Scheduled(cron = "${ranking.batch.retention-cron:0 0 4 * * *}", zone = "${ranking.batch.zone:Asia/Seoul}")
+    public void runRetentionPurge() {
+        log.debug("Trigger ranking retention purge batch scheduler");
+        rankingBatchService.runRetentionPurgeAll();
+    }
 }

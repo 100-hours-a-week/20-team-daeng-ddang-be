@@ -42,6 +42,22 @@ public class RankingPeriodResolver {
         };
     }
 
+    public String resolveRetentionCutoffPeriodValue(RankingPeriodType periodType, int keepCount) {
+        if (keepCount <= 0) {
+            throw new IllegalArgumentException("keepCount must be positive");
+        }
+
+        LocalDate currentDate = LocalDate.now(BATCH_ZONE);
+        LocalDate oldestKeptDate = switch (periodType) {
+            case YEAR -> currentDate.withDayOfYear(1).minusYears(keepCount - 1L);
+            case MONTH -> currentDate.withDayOfMonth(1).minusMonths(keepCount - 1L);
+            case WEEK -> currentDate
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    .minusWeeks(keepCount - 1L);
+        };
+        return resolvePeriodValue(periodType, resolvePeriodRange(periodType, oldestKeptDate));
+    }
+
     private PeriodRange from(LocalDate startDate, LocalDate endDate) {
         return new PeriodRange(startDate.atStartOfDay(), endDate.atStartOfDay());
     }
