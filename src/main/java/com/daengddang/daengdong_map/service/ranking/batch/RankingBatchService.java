@@ -43,31 +43,50 @@ public class RankingBatchService {
     }
 
     private void runUpsertByPeriodType(RankingPeriodType periodType) {
-        String periodValue = rankingPeriodResolver.resolveCurrentPeriodValue(periodType);
-        log.info("Ranking upsert period start. periodType={}, periodValue={}", periodType, periodValue);
+        PeriodRange periodRange = rankingPeriodResolver.resolveCurrentPeriodRange(periodType);
+        String periodValue = rankingPeriodResolver.resolvePeriodValue(periodType, periodRange);
+        log.info(
+                "Ranking upsert period start. periodType={}, periodValue={}, startAt={}, endAt={}",
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
 
-        runDogGlobalRankingUpsert(periodType, periodValue);
-        runDogRegionRankingUpsert(periodType, periodValue);
-        runRegionRankingUpsert(periodType, periodValue);
-        runRegionContributionRankingUpsert(periodType, periodValue);
+        runDogGlobalRankingUpsert(periodType, periodValue, periodRange);
+        runDogRegionRankingUpsert(periodType, periodValue, periodRange);
+        runRegionRankingUpsert(periodType, periodValue, periodRange);
+        runRegionContributionRankingUpsert(periodType, periodValue, periodRange);
 
         log.info("Ranking upsert period finished. periodType={}, periodValue={}", periodType, periodValue);
     }
 
     private void runCleanupByPeriodType(RankingPeriodType periodType) {
-        String periodValue = rankingPeriodResolver.resolveCurrentPeriodValue(periodType);
-        log.info("Ranking cleanup period start. periodType={}, periodValue={}", periodType, periodValue);
+        PeriodRange periodRange = rankingPeriodResolver.resolveCurrentPeriodRange(periodType);
+        String periodValue = rankingPeriodResolver.resolvePeriodValue(periodType, periodRange);
+        log.info(
+                "Ranking cleanup period start. periodType={}, periodValue={}, startAt={}, endAt={}",
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
 
-        runDogGlobalRankingCleanup(periodType, periodValue);
-        runDogRegionRankingCleanup(periodType, periodValue);
-        runRegionRankingCleanup(periodType, periodValue);
-        runRegionContributionRankingCleanup(periodType, periodValue);
+        runDogGlobalRankingCleanup(periodType, periodValue, periodRange);
+        runDogRegionRankingCleanup(periodType, periodValue, periodRange);
+        runRegionRankingCleanup(periodType, periodValue, periodRange);
+        runRegionContributionRankingCleanup(periodType, periodValue, periodRange);
 
         log.info("Ranking cleanup period finished. periodType={}, periodValue={}", periodType, periodValue);
     }
 
-    private void runDogGlobalRankingUpsert(RankingPeriodType periodType, String periodValue) {
-        int upserted = dogGlobalRankBatchRepository.upsertRanks(periodType, periodValue);
+    private void runDogGlobalRankingUpsert(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int upserted = dogGlobalRankBatchRepository.upsertRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Dog global ranking upsert completed. periodType={}, periodValue={}, upserted={}",
                 periodType,
@@ -76,8 +95,13 @@ public class RankingBatchService {
         );
     }
 
-    private void runDogGlobalRankingCleanup(RankingPeriodType periodType, String periodValue) {
-        int deleted = dogGlobalRankBatchRepository.deleteObsoleteRanks(periodType, periodValue);
+    private void runDogGlobalRankingCleanup(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int deleted = dogGlobalRankBatchRepository.deleteObsoleteRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Dog global ranking cleanup completed. periodType={}, periodValue={}, deleted={}",
                 periodType,
@@ -86,8 +110,13 @@ public class RankingBatchService {
         );
     }
 
-    private void runDogRegionRankingUpsert(RankingPeriodType periodType, String periodValue) {
-        int upserted = dogRankBatchRepository.upsertRanks(periodType, periodValue);
+    private void runDogRegionRankingUpsert(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int upserted = dogRankBatchRepository.upsertRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Dog region ranking upsert completed. periodType={}, periodValue={}, upserted={}",
                 periodType,
@@ -96,8 +125,13 @@ public class RankingBatchService {
         );
     }
 
-    private void runDogRegionRankingCleanup(RankingPeriodType periodType, String periodValue) {
-        int deleted = dogRankBatchRepository.deleteObsoleteRanks(periodType, periodValue);
+    private void runDogRegionRankingCleanup(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int deleted = dogRankBatchRepository.deleteObsoleteRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Dog region ranking cleanup completed. periodType={}, periodValue={}, deleted={}",
                 periodType,
@@ -106,8 +140,13 @@ public class RankingBatchService {
         );
     }
 
-    private void runRegionRankingUpsert(RankingPeriodType periodType, String periodValue) {
-        int upserted = regionRankBatchRepository.upsertRanks(periodType, periodValue);
+    private void runRegionRankingUpsert(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int upserted = regionRankBatchRepository.upsertRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Region ranking upsert completed. periodType={}, periodValue={}, upserted={}",
                 periodType,
@@ -116,8 +155,13 @@ public class RankingBatchService {
         );
     }
 
-    private void runRegionRankingCleanup(RankingPeriodType periodType, String periodValue) {
-        int deleted = regionRankBatchRepository.deleteObsoleteRanks(periodType, periodValue);
+    private void runRegionRankingCleanup(RankingPeriodType periodType, String periodValue, PeriodRange periodRange) {
+        int deleted = regionRankBatchRepository.deleteObsoleteRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Region ranking cleanup completed. periodType={}, periodValue={}, deleted={}",
                 periodType,
@@ -126,8 +170,17 @@ public class RankingBatchService {
         );
     }
 
-    private void runRegionContributionRankingUpsert(RankingPeriodType periodType, String periodValue) {
-        int upserted = regionDogRankBatchRepository.upsertRanks(periodType, periodValue);
+    private void runRegionContributionRankingUpsert(
+            RankingPeriodType periodType,
+            String periodValue,
+            PeriodRange periodRange
+    ) {
+        int upserted = regionDogRankBatchRepository.upsertRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Region contribution ranking upsert completed. periodType={}, periodValue={}, upserted={}",
                 periodType,
@@ -136,8 +189,17 @@ public class RankingBatchService {
         );
     }
 
-    private void runRegionContributionRankingCleanup(RankingPeriodType periodType, String periodValue) {
-        int deleted = regionDogRankBatchRepository.deleteObsoleteRanks(periodType, periodValue);
+    private void runRegionContributionRankingCleanup(
+            RankingPeriodType periodType,
+            String periodValue,
+            PeriodRange periodRange
+    ) {
+        int deleted = regionDogRankBatchRepository.deleteObsoleteRanks(
+                periodType,
+                periodValue,
+                periodRange.startAt(),
+                periodRange.endAt()
+        );
         log.info(
                 "Region contribution ranking cleanup completed. periodType={}, periodValue={}, deleted={}",
                 periodType,
