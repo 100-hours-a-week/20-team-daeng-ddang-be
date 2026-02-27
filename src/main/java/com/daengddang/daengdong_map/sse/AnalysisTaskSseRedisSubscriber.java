@@ -20,6 +20,8 @@ public class AnalysisTaskSseRedisSubscriber {
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
     private final AsyncSseRedisProperties redisProperties;
+    private final AnalysisTaskSseRedisMetrics sseRedisMetrics;
+    private final AnalysisTaskEventDedupeStore dedupeStore;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
     private final AnalysisTaskSseService analysisTaskSseService;
 
@@ -62,6 +64,12 @@ public class AnalysisTaskSseRedisSubscriber {
                     objectMapper.readValue(message, AnalysisTaskSseRedisEnvelope.class);
 
             if (redisProperties.getNodeId().equals(envelope.getSourceNodeId())) {
+                return;
+            }
+            if (!dedupeStore.tryMarkFirstProcessed(envelope.getEventId())) {
+                sseRedisMetrics.recordDedupeDrop();
+                log.debug("분석 작업 SSE Redis 중복 이벤트를 건너뜁니다. eventId={}, taskId={}",
+                        envelope.getEventId(), envelope.getTaskId());
                 return;
             }
             if (envelope.getTaskId() == null || envelope.getTaskId().isBlank()) {
