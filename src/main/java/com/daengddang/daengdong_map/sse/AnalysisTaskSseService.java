@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
@@ -80,6 +81,30 @@ public class AnalysisTaskSseService {
         if (isTerminal(detailResponse.getStatus())) {
             completeAll(taskId);
         }
+    }
+
+    @Scheduled(fixedDelayString = "${async.sse.heartbeat-interval-ms:15000}")
+    public void publishHeartbeat() {
+        if (emittersByTaskId.isEmpty()) {
+            return;
+        }
+        String now = Instant.now().toString();
+        emittersByTaskId.forEach((taskId, subscribers) -> {
+            if (subscribers == null || subscribers.isEmpty()) {
+                return;
+            }
+            subscribers.forEach((subscriberId, emitter) -> {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name(AnalysisTaskSseEventType.HEARTBEAT.eventName())
+                            .data(Map.of("ts", now)));
+                } catch (IOException ex) {
+                    log.debug("analysis task sse heartbeat send failed. taskId={}, subscriberId={}",
+                            taskId, subscriberId, ex);
+                    remove(taskId, subscriberId);
+                }
+            });
+        });
     }
 
     private boolean isTerminal(String status) {
