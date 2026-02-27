@@ -45,7 +45,7 @@ public class AnalysisTaskSseService {
                     .name(AnalysisTaskSseEventType.STATUS.eventName())
                     .data(detailResponse));
         } catch (IOException ex) {
-            log.debug("analysis task sse subscribe initial send failed. taskId={}, subscriberId={}",
+            log.debug("분석 작업 SSE 구독 초기 이벤트 전송에 실패했습니다. taskId={}, subscriberId={}",
                     taskId, subscriberId, ex);
             cleanup.run();
             emitter.completeWithError(ex);
@@ -72,7 +72,7 @@ public class AnalysisTaskSseService {
                         .id(UUID.randomUUID().toString())
                         .data(detailResponse));
             } catch (IOException ex) {
-                log.debug("analysis task sse status send failed. taskId={}, subscriberId={}",
+                log.debug("분석 작업 SSE 상태 이벤트 전송에 실패했습니다. taskId={}, subscriberId={}",
                         taskId, subscriberId, ex);
                 remove(taskId, subscriberId);
             }
@@ -99,7 +99,7 @@ public class AnalysisTaskSseService {
                             .name(AnalysisTaskSseEventType.HEARTBEAT.eventName())
                             .data(Map.of("ts", now)));
                 } catch (IOException ex) {
-                    log.debug("analysis task sse heartbeat send failed. taskId={}, subscriberId={}",
+                    log.debug("분석 작업 SSE 하트비트 전송에 실패했습니다. taskId={}, subscriberId={}",
                             taskId, subscriberId, ex);
                     remove(taskId, subscriberId);
                 }
