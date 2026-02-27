@@ -1,4 +1,4 @@
-name: BE CI/CD (TEMP)
+name: BE CI/CD
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: be-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -16,6 +17,7 @@ concurrency:
 
 env:
   RELEASE_ID: ${{ github.sha }}
+  ARTIFACT_FILE: spring-api.jar
 
 jobs:
   ci:
@@ -65,7 +67,7 @@ jobs:
       - name: Upload build artifact (jar)
         uses: actions/upload-artifact@v4
         with:
-          name: daeng-map-api-${{ env.RELEASE_ID }}
+          name: spring-${{ env.RELEASE_ID }}
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 30
@@ -142,6 +144,9 @@ jobs:
     if: github.event_name == 'push' && github.ref_name == 'dev'
     timeout-minutes: 15
 
+    env:
+      ENV_NAME: "DEV"
+
     steps:
       - name: Mark CD start
         id: cd_time
@@ -150,8 +155,14 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: daeng-map-api-${{ env.RELEASE_ID }}
-          path: build/libs
+          name: spring-${{ env.RELEASE_ID }}
+          path: .
+
+      - name: Normalize jar name
+        run: |
+          set -euo pipefail
+          JAR="$(ls -1 *.jar | head -n 1)"
+          mv "$JAR" ${{ env.ARTIFACT_FILE }}
 
       - name: Copy JAR to EC2
         id: scp
@@ -160,35 +171,36 @@ jobs:
           host: ${{ secrets.AWS_DEV_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_DEV_SSH_KEY }}
-          source: "build/libs/*.jar"
-          target: "/tmp/be-deploy-${{ env.RELEASE_ID }}"
-          strip_components: 2
+          source: ${{ env.ARTIFACT_FILE }}
+          target: "/tmp"
 
       - name: Deploy with Port Switching
         id: deploy
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-          ENV_NAME: "DEV"
         with:
           host: ${{ secrets.AWS_DEV_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_DEV_SSH_KEY }}
-          envs: GITHUB_SHA,ENV_NAME
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
 
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+
+            ENV_NAME='${{ env.ENV_NAME }}'
             echo "🌐 ${ENV_NAME} 서버에 연결되었습니다."
 
             # === 설정 변수 ===
-            BASE_DIR="/home/ubuntu/daeng-ddang-be"
+            BASE_DIR="/opt/app/backend"
             RELEASES_DIR="${BASE_DIR}/releases"
-            NEW_RELEASE_DIR="${RELEASES_DIR}/${GITHUB_SHA}"
-            TEMP_JAR_DIR="/tmp/be-deploy-${GITHUB_SHA}"
+            RELEASE_DIR="${RELEASES_DIR}/${{ env.RELEASE_ID }}"
+            TEMP_JAR_FILE="/tmp/${{ env.ARTIFACT_FILE }}"
             UPSTREAM_CONF="/etc/caddy/conf.d/upstream.caddy"
+            CURRENT_LINK="${BASE_DIR}/current"
+            BACKUP_LINK="${BASE_DIR}/backup"
 
-            echo "🚀 배포 시작: ${GITHUB_SHA}"
+            echo "🚀 배포 시작: ${{ env.RELEASE_ID }}"
 
             # 폴더 생성
             mkdir -p ${RELEASES_DIR}
@@ -209,29 +221,42 @@ jobs:
             echo "🟢 배포 타겟 포트: $TARGET_PORT"
 
             # 2. 파일 준비
-            mkdir -p ${NEW_RELEASE_DIR}
-            if [ -d "${TEMP_JAR_DIR}" ]; then
-              mv ${TEMP_JAR_DIR}/*.jar ${NEW_RELEASE_DIR}/app.jar
+            mkdir -p ${RELEASE_DIR}
+            if [ -f "${TEMP_JAR_FILE}" ]; then
+              mv "${TEMP_JAR_FILE}" ${RELEASE_DIR}/app.jar
             else
-              echo "❌ 전송된 JAR 파일이 없습니다.."
+              echo "❌ 전송된 JAR 파일이 없습니다."
               exit 1
             fi
 
-            # 타겟 포트의 기존 좀비 프로세스 정리
+            # 3. 직전 버전 backup link 저장
+            if [ -L "${CURRENT_LINK}" ] || [ -d "${CURRENT_LINK}" ]; then
+              CURRENT_RELEASE="$(readlink -f "${CURRENT_LINK}" || true)"
+              if [ -n "${CURRENT_RELEASE}" ] && [ -d "${CURRENT_RELEASE}" ]; then
+                echo "📦 백업 링크 생성: ${CURRENT_RELEASE}"
+                ln -sfn "${CURRENT_RELEASE}" "${BACKUP_LINK}"
+              fi
+            fi
+
+            # 4. current 링크를 새 릴리즈로 교체
+            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+            echo "🔗 current 링크 업데이트: ${RELEASE_DIR}"
+
+            # 5. 타겟 포트의 기존 좀비 프로세스 정리
             PID_TO_KILL=$(lsof -ti :${TARGET_PORT} || true)
             if [ -n "$PID_TO_KILL" ]; then
-              echo "🧹 타겟 포트($TARGET_PORT)의 기존 프로세스 정리..."
+              echo "🧹 타겟 포트($TARGET_PORT)의 기존 프로세스 정리...."
               kill -9 $PID_TO_KILL || true
             fi
 
-            # 3. 새 애플리케이션 실행 (PM2)
+            # 6. 새 애플리케이션 실행 (PM2)
             echo "🚀 PM2로 애플리케이션 시작 (Port: $TARGET_PORT)..."
 
             pm2 delete "daeng-backend-${TARGET_PORT}" 2>/dev/null || true
 
-            TARGET_PORT=${TARGET_PORT} JAR_PATH=${NEW_RELEASE_DIR}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
+            TARGET_PORT=${TARGET_PORT} JAR_PATH=${CURRENT_LINK}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
 
-            # 4. 헬스 체크
+            # 7. 헬스 체크
             echo "🏥 헬스 체크 시작..."
             HEALTH_CHECK_URL="http://localhost:${TARGET_PORT}/api/v3/health"
             IS_HEALTHY=0
@@ -249,7 +274,7 @@ jobs:
               fi
             done
 
-            # 5. 결과 처리 및 트래픽 전환
+            # 8. 결과 처리 및 트래픽 전환
             if [ "$IS_HEALTHY" -eq 1 ]; then
               echo "🔄 Caddy 연결 변경 중 (Port: $TARGET_PORT)..."
               echo "reverse_proxy localhost:${TARGET_PORT}" | tee ${UPSTREAM_CONF} > /dev/null
@@ -257,22 +282,32 @@ jobs:
               if caddy reload --config /etc/caddy/Caddyfile; then
                 echo "🎉 배포 성공 및 트래픽 전환 완료."
 
-                # 6. 구버전 종료
+                # 9. 구버전 종료
                 echo "🛑 구버전 프로세스 삭제 (Port: $CURRENT_PORT)..."
                 pm2 delete "daeng-backend-${CURRENT_PORT}" || true
                 pm2 save
               else
                 echo "🚨 Caddy Reload 실패! 롤백합니다."
+                # backup 링크로 current 복원
+                if [ -L "${BACKUP_LINK}" ]; then
+                  ln -sfn "$(readlink -f ${BACKUP_LINK})" "${CURRENT_LINK}"
+                  echo "🔙 current 링크 롤백 완료"
+                fi
                 pm2 delete "daeng-backend-${TARGET_PORT}" || true
                 exit 1
               fi
             else
               echo "❌ 헬스 체크 실패. 배포를 중단합니다."
+              # backup 링크로 current 복원
+              if [ -L "${BACKUP_LINK}" ]; then
+                ln -sfn "$(readlink -f ${BACKUP_LINK})" "${CURRENT_LINK}"
+                echo "🔙 current 링크 롤백 완료"
+              fi
               pm2 delete "daeng-backend-${TARGET_PORT}" || true
               exit 1
             fi
 
-            # 오래된 릴리즈 폴더 정리
+            # 10. 오래된 릴리즈 폴더 정리
             echo "🧹 오래된 릴리즈 정리 중..."
             cd ${RELEASES_DIR} && ls -t | tail -n +6 | xargs -I {} rm -rf {} || true
 
