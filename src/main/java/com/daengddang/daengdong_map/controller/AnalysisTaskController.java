@@ -94,9 +94,9 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_RETRIEVED, response);
     }
 
-    @GetMapping(value = "/walks/{walkId}/analysis/tasks/{taskId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/walks/{walkId}/analysis/tasks/{taskId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Override
-    public SseEmitter streamTask(
+    public SseEmitter subscribeTaskEvents(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long walkId,
             @PathVariable String taskId
@@ -106,9 +106,9 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         return analysisTaskSseService.subscribe(response, asyncSseProperties.getEmitterTimeoutMs());
     }
 
-    @GetMapping(value = "/healthcares/analysis/tasks/{taskId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/healthcares/analysis/tasks/{taskId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Override
-    public SseEmitter streamHealthcareTask(
+    public SseEmitter subscribeHealthcareTaskEvents(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable String taskId
     ) {

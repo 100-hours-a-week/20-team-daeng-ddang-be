@@ -106,7 +106,7 @@ public interface AnalysisTaskApi {
             @PathVariable String taskId
     );
 
-    @Operation(summary = "Subscribe analysis task stream (walk)")
+    @Operation(summary = "Subscribe analysis task events (walk)")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
@@ -117,13 +117,13 @@ public interface AnalysisTaskApi {
             com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
     })
-    SseEmitter streamTask(
+    SseEmitter subscribeTaskEvents(
             @Parameter(hidden = true) AuthUser authUser,
             @PathVariable Long walkId,
             @PathVariable String taskId
     );
 
-    @Operation(summary = "Subscribe analysis task stream (healthcare)")
+    @Operation(summary = "Subscribe analysis task events (healthcare)")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
@@ -134,7 +134,7 @@ public interface AnalysisTaskApi {
             com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
     })
-    SseEmitter streamHealthcareTask(
+    SseEmitter subscribeHealthcareTaskEvents(
             @Parameter(hidden = true) AuthUser authUser,
             @PathVariable String taskId
     );
