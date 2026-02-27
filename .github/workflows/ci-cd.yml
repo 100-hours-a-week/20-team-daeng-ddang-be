@@ -214,7 +214,33 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-northeast-2
 
+      - name: Check if image tag is already deployed
+        id: check_tag
+        run: |
+          set -euo pipefail
+
+          # 1. 현재 배포되어 있는 태그 가져오기
+          CURRENT_TAG=$(aws ssm get-parameter \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
+            --query "Parameter.Value" \
+            --output text 2>/dev/null || echo "none")
+
+          TARGET_TAG="${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
+
+          echo "🔍 현재 배포된 태그: $CURRENT_TAG"
+          echo "🚀 배포하려는 태그: $TARGET_TAG"
+
+          echo "prev_tag=$CURRENT_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT_TAG" = "$TARGET_TAG" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ 이미 동일한 버전이 배포되어 있습니다. 배포를 건너뜁니다."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload docker-compose.yml to S3
+        if: steps.check_tag.outputs.skip != 'true'
         id: s3
         env:
           S3_BUCKET: ${{ secrets.DEPLOY_BUCKET }}
@@ -224,10 +250,11 @@ jobs:
           echo "✅ docker-compose.yml S3 업로드 완료"
 
       - name: Update SSM Parameter (Docker image tag)
+        if: steps.check_tag.outputs.skip != 'true'
         id: ssm
         run: |
           aws ssm put-parameter \
-            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}" \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
             --value "${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}" \
             --type String \
             --overwrite
@@ -235,6 +262,7 @@ jobs:
           echo "✅ SSM 파라미터 업데이트 완료: ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
 
       - name: Create new Launch Template version
+        if: steps.check_tag.outputs.skip != 'true'
         id: lt
         run: |
           set -euo pipefail
@@ -251,6 +279,7 @@ jobs:
           echo "📋 새 Launch Template 버전: ${NEW_VERSION}"
 
       - name: Start ASG Instance Refresh
+        if: steps.check_tag.outputs.skip != 'true'
         id: deploy
         run: |
           set -euo pipefail
@@ -271,6 +300,7 @@ jobs:
           echo "📋 Instance Refresh ID: ${REFRESH_ID}"
 
       - name: Wait for Instance Refresh
+        if: steps.check_tag.outputs.skip != 'true'
         run: |
           set -euo pipefail
 
@@ -308,6 +338,21 @@ jobs:
             esac
           done
 
+      # 새로운 버전으로 배포가 성공했으며 직전 배포가 존재할 때 백업 이미지로 저장
+      - name: Backup Previous Tag
+        if: |
+          steps.check_tag.outputs.skip != 'true' && 
+          steps.check_tag.outputs.prev_tag != 'none' &&
+          success()
+        run: |
+          echo "📦 직전 버전 백업 중: ${{ steps.check_tag.outputs.prev_tag }}"
+          aws ssm put-parameter \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/backup" \
+            --value "${{ steps.check_tag.outputs.prev_tag }}" \
+            --type String \
+            --overwrite
+          echo "✅ 백업 완료"
+
       - name: Mark CD end
         id: cd_time_end
         if: always()
@@ -316,6 +361,7 @@ jobs:
       - name: Notify (CD)
         if: always()
         env:
+          SKIP: ${{ steps.check_tag.outputs.skip || 'false' }}
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           MESSAGE: ${{ env.MESSAGE }}
           JOB_STATUS: ${{ job.status }}
@@ -345,15 +391,23 @@ jobs:
             TITLE="⚠️ [BE / ${ENV_NAME}] CD Cancelled"
             COLOR=16776988
           elif [ "$JOB_STATUS" = "skipped" ]; then
-            TITLE="⏭️ [BE / ${ENV_NAME}] CD Skipped"
+            TITLE="⏭️ [BE / ${ENV_NAME}] CI Skipped"
             COLOR=9807270
           else
             TITLE="❌ [BE / ${ENV_NAME}] CD Failed"
             COLOR=15548997
           fi
 
+
           # 개행 문자 및 따옴표 제거, 200자로 자름
           safe_msg=$(echo "$MESSAGE" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
+
+          # 동일 배포 처리
+          if [ "$SKIP" = "true" ]; then
+            TITLE="⏭️ [BE / ${ENV_NAME}] CD Skipped due to same Version"
+            COLOR=9807270
+          fi
+
 
           JSON_PAYLOAD=$(cat <<JSON
           {
