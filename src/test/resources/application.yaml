@@ -45,3 +45,4 @@ ai:
   fastapi:
     mission-judge-uri: http://localhost:8000
     expression-analyze-uri: http://localhost:8000
+    healthcare-analyze-uri: http://localhost:8000

@@ -12,4 +12,6 @@ public interface MissionUploadRepository extends JpaRepository<MissionUpload, Lo
     Optional<MissionUpload> findByWalkAndMission(Walk walk, Mission mission);
 
     List<MissionUpload> findAllByWalk(Walk walk);
+
+    long countByWalk(Walk walk);
 }

@@ -19,4 +19,8 @@ public class BreedListResponse {
                 .toList();
         return new BreedListResponse(responses);
     }
+
+    public static BreedListResponse of(List<BreedResponse> breeds) {
+        return new BreedListResponse(breeds);
+    }
 }

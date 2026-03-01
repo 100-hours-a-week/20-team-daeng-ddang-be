@@ -42,6 +42,7 @@ public enum SuccessCode {
     PERSONAL_RANKING_LIST_RETRIEVED("개인 랭킹 목록 조회에 성공했습니다."),
     REGION_RANKING_SUMMARY_RETRIEVED("지역 랭킹 요약 조회에 성공했습니다."),
     REGION_RANKING_LIST_RETRIEVED("지역 랭킹 목록 조회에 성공했습니다."),
+    REGION_CONTRIBUTION_RANKING_SUMMARY_RETRIEVED("지역 기여도 랭킹 요약 조회에 성공했습니다."),
     REGION_CONTRIBUTION_RANKING_LIST_RETRIEVED("지역 기여도 랭킹 목록 조회에 성공했습니다."),
 
     PRESIGNED_URL_ISSUED("Presigned URL 발급에 성공했습니다."),
@@ -66,6 +67,8 @@ public enum SuccessCode {
     MISSION_LIST_RETRIEVED("미션 목록 조회에 성공했습니다."),
     MISSION_UPLOAD_SAVED("돌발미션 업로드 정보가 저장되었습니다."),
     MISSION_UPLOAD_LIST_RETRIEVED("돌발미션 업로드 목록 조회에 성공했습니다."),
+    ANALYSIS_TASK_ACCEPTED("분석 작업이 접수되었습니다."),
+    ANALYSIS_TASK_RETRIEVED("분석 작업 조회에 성공했습니다."),
 
     HEALTH_CHECK_OK("success");
 

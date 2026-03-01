@@ -12,6 +12,7 @@ import com.daengddang.daengdong_map.service.MissionJudgeService;
 import com.daengddang.daengdong_map.service.MissionUploadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +37,19 @@ public class MissionController implements MissionApi {
         return ApiResponse.success(SuccessCode.MISSION_ANALYSIS_COMPLETED, response);
     }
 
+    @GetMapping("/analysis")
+    @Override
+    public ApiResponse<MissionJudgeResponse> getMissionAnalysis(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long walkId
+    ) {
+        MissionJudgeResponse response =
+                missionJudgeService.getResult(authUser.getUserId(), walkId);
+        return ApiResponse.success(SuccessCode.MISSION_ANALYSIS_RESULT_RETRIEVED, response);
+    }
+
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @Override
     public ApiResponse<MissionUploadResponse> saveUpload(
             @AuthenticationPrincipal AuthUser authUser,

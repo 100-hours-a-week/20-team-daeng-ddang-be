@@ -54,8 +54,10 @@ public class SecurityConfig {
                                 "/ws/**",
                                 "/api/v3/auth",
                                 "/api/v3/auth/",
-                                "/api/v1/auth/**",
+                                "/api/v3/rankings/**",
                                 "/api/v3/auth/**",
+                                "/api/v3/users/regions",
+                                "/api//v3/regions",
                                 "/api/swagger-ui/**",
                                 "/api/v3/api-docs/**"
                         ).permitAll()

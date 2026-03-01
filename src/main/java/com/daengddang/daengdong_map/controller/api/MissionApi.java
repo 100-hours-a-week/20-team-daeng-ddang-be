@@ -23,6 +23,7 @@ public interface MissionApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "MISSION_UPLOAD_LIMIT_EXCEEDED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "AI_SERVER_CONNECTION_FAILED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
     })
@@ -30,6 +31,7 @@ public interface MissionApi {
             com.daengddang.daengdong_map.common.ErrorCode.INVALID_FORMAT,
             com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND,
+            com.daengddang.daengdong_map.common.ErrorCode.MISSION_UPLOAD_LIMIT_EXCEEDED,
             com.daengddang.daengdong_map.common.ErrorCode.AI_SERVER_CONNECTION_FAILED
     })
     ApiResponse<MissionJudgeResponse> judgeMissions(
@@ -37,20 +39,38 @@ public interface MissionApi {
             @PathVariable Long walkId
     );
 
+    @Operation(summary = "Get mission analysis result")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
+    })
+    @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
+            com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
+    })
+    ApiResponse<MissionJudgeResponse> getMissionAnalysis(
+            @Parameter(hidden = true) AuthUser authUser,
+            @PathVariable Long walkId
+    );
+
     @Operation(summary = "Upload mission video")
     @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Created"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "INVALID_FORMAT"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "WALK_ALREADY_ENDED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "WALK_ALREADY_ENDED, MISSION_UPLOAD_LIMIT_EXCEEDED"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "INTERNAL_SERVER_ERROR")
     })
     @ErrorCodes({
             com.daengddang.daengdong_map.common.ErrorCode.INVALID_FORMAT,
             com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND,
-            com.daengddang.daengdong_map.common.ErrorCode.WALK_ALREADY_ENDED
+            com.daengddang.daengdong_map.common.ErrorCode.WALK_ALREADY_ENDED,
+            com.daengddang.daengdong_map.common.ErrorCode.MISSION_UPLOAD_LIMIT_EXCEEDED
     })
     ApiResponse<MissionUploadResponse> saveUpload(
             @Parameter(hidden = true) AuthUser authUser,

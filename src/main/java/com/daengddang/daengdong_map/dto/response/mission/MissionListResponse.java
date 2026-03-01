@@ -19,4 +19,8 @@ public class MissionListResponse {
                 .toList();
         return new MissionListResponse(responses);
     }
+
+    public static MissionListResponse of(List<MissionResponse> missions) {
+        return new MissionListResponse(missions);
+    }
 }

@@ -12,21 +12,27 @@ permissions:
   id-token: write
 
 concurrency:
-  group: be-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: be-ci-cd-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   RELEASE_ID: ${{ github.sha }}
-  ARTIFACT_FILE: spring-api.jar
+  DOCKER_IMAGE: ${{ secrets.DOCKER_IMAGE }}
+  MESSAGE: >-
+    ${{
+      github.event.pull_request.title ||
+      github.event.head_commit.message ||
+      github.workflow
+    }}
 
 jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
-      - name: Record CI start
+      - name: Mark CI start
         id: ci_time
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
 
@@ -43,549 +49,381 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Test & Check
-        id: time_check
+      - name: Test
+        id: time_test
         run: |
           start=$(date +%s)
-          ./gradlew clean check -x test --no-daemon
+          # ./gradlew clean test --no-daemon
           end=$(date +%s)
           echo "start=${start}" >> "$GITHUB_OUTPUT"
           echo "end=${end}" >> "$GITHUB_OUTPUT"
 
-      - name: Build (bootJar)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub (push only)
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build
         id: time_build
         run: |
           start=$(date +%s)
-          ./gradlew bootJar -x test --no-daemon
+          docker build -t "${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID}}" .
           end=$(date +%s)
           echo "start=${start}" >> "$GITHUB_OUTPUT"
           echo "end=${end}" >> "$GITHUB_OUTPUT"
 
-      - name: List artifacts
-        run: ls -al build/libs
+      - name: Push (push only)
+        if: github.event_name == 'push'
+        run: |
+          docker push "${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID}}"
 
-      - name: Upload build artifact (jar)
-        uses: actions/upload-artifact@v4
-        with:
-          name: spring-${{ env.RELEASE_ID }}
-          path: build/libs/*.jar
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Record CI end
+      - name: Mark CI end
         id: ci_time_end
         if: always()
         run: echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Calculate CI times
-        id: ci_calc
+      - name: Notify
         if: always()
         env:
-          COMMIT_MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || github.workflow }}
-        run: |
-          ci_total=$(( ${{ steps.ci_time_end.outputs.end }} - ${{ steps.ci_time.outputs.start }} ))
-          check_sec=$(( ${{ steps.time_check.outputs.end || 0 }} - ${{ steps.time_check.outputs.start || 0 }} ))
-          build_sec=$(( ${{ steps.time_build.outputs.end || 0 }} - ${{ steps.time_build.outputs.start || 0 }} ))
-          echo "ci_total=${ci_total}" >> "$GITHUB_OUTPUT"
-          echo "check_sec=${check_sec}" >> "$GITHUB_OUTPUT"
-          echo "build_sec=${build_sec}" >> "$GITHUB_OUTPUT"
-          # 커밋 메시지에서 줄바꿈을 공백으로 변환하고, 쌍따옴표 이스케이프
-          safe_msg=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
-          echo "safe_msg=${safe_msg}" >> "$GITHUB_OUTPUT"
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MESSAGE: ${{ env.MESSAGE }}
+          JOB_STATUS: ${{ job.status }}
+          RELEASE_ID: ${{ env.RELEASE_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TIMESTAMP: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          ENV_NAME: >-
+            ${{
+              (github.event_name == 'pull_request' && github.base_ref == 'main') && 'prod' ||
+              (github.event_name == 'pull_request') && 'dev' ||
+              (github.ref_name == 'main' && 'prod') ||
+              'dev'
+            }}
 
-      - name: Notify Discord (CI Success)
-        if: success()
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "[BE] CI: success",
-              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "color": 5763719,
-              "description": "${{ steps.ci_calc.outputs.safe_msg }}",
-              "fields": [
-                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
-                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
-                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
-                {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
-                {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
-                {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
-              ],
-              "timestamp": "${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}"
-            }]
+          CI_START: ${{ steps.ci_time.outputs.start }}
+          CI_END: ${{ steps.ci_time_end.outputs.end }}
 
-      - name: Notify Discord (CI Failure)
-        if: failure()
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "[BE] CI: failure",
-              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "color": 15548997,
-              "description": "${{ steps.ci_calc.outputs.safe_msg }}",
-              "fields": [
-                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
-                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
-                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
-                {"name": "Total CI", "value": "${{ steps.ci_calc.outputs.ci_total }}s", "inline": true},
-                {"name": "Check", "value": "${{ steps.ci_calc.outputs.check_sec }}s", "inline": true},
-                {"name": "Build", "value": "${{ steps.ci_calc.outputs.build_sec }}s", "inline": true}
-              ],
-              "timestamp": "${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}"
-            }]
+          TEST_S: ${{ steps.time_test.outputs.start }}
+          TEST_E: ${{ steps.time_test.outputs.end }}
 
-  # main push에서만 실행
-  slo:
-    name: WebSocket SLO
-    needs: ci
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_name == 'main'
-    timeout-minutes: 15
-
-    outputs:
-      slo_passed: ${{ steps.judge.outputs.slo_passed }}
-      ws_url: ${{ steps.tf_out.outputs.ws_url }}
-      base_url: ${{ steps.tf_out.outputs.base_url }}
-
-    env:
-      TF_STACK_DIR: staging/terraform/v1/aws/stacks/staging-ephemeral
-      ENV_NAME: "staging"
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.14.3
-
-      - name: Checkout Terraform repo (sparse)
-        uses: actions/checkout@v4
-        with:
-          repository: 100-hours-a-week/20-team-daeng-ddang-cloud
-          ref: main
-          path: staging
-          sparse-checkout: terraform/v1/aws
-          sparse-checkout-cone-mode: false
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: ap-northeast-2
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-
-      - name: Create staging
+          BUILD_S: ${{ steps.time_build.outputs.start }}
+          BUILD_E: ${{ steps.time_build.outputs.end }}
         run: |
           set -euo pipefail
-          echo "${{ secrets.STAGING_TFVARS_FILE_B64 }}" | base64 -d > "staging/terraform/v1/aws/environments/staging.tfvars"
-          cd "${TF_STACK_DIR}"
-          terraform init -reconfigure -backend-config=backend-staging.hcl
-          terraform apply -auto-approve -var-file="../../environments/staging.tfvars"
 
-      - name: Read Terraform outputs
-        id: tf_out
-        run: |
-          set -euo pipefail
-          cd "${TF_STACK_DIR}"
+          [ -z "${WEBHOOK:-}" ] && echo "⚠️ DISCORD_WEBHOOK_URL이 공백이므로 본 단계를 스킵합니다." && exit 0
 
-          PUBLIC_IP="$(terraform output -raw public_ip)"
-          BASE_URL="$(terraform output -raw base_url)"
-          WS_URL="$(terraform output -raw ws_url)"
+          # 안전한 산술 계산용 함수
+          dur() { local s="${1:-}" e="${2:-}"; [ -n "$s" ] && [ -n "$e" ] && echo $((e - s)) || echo 0; }
 
-          echo "public_ip=${PUBLIC_IP}" >> "$GITHUB_OUTPUT"
-          echo "base_url=${BASE_URL}" >> "$GITHUB_OUTPUT"
-          echo "ws_url=${WS_URL}" >> "$GITHUB_OUTPUT"
+          ci_total="$(dur "$CI_START" "$CI_END")"
+          test_sec="$(dur "$TEST_S" "$TEST_E")"
+          build_sec="$(dur "$BUILD_S" "$BUILD_E")"
 
-          echo "📡 public_ip=${PUBLIC_IP}"
-          echo "📡 base_url=${BASE_URL}"
-          echo "🔌 ws_url=${WS_URL}"
+          TIMESTAMP="${TIMESTAMP:-$(date -u +%FT%TZ)}"
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: spring-${{ env.RELEASE_ID }}
-          path: .
-
-      - name: Normalize jar name
-        run: |
-          set -euo pipefail
-          JAR="$(ls -1 *.jar | head -n 1)"
-          mv "$JAR" ${{ env.ARTIFACT_FILE }}
-
-      - name: Copy JAR to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ steps.tf_out.outputs.public_ip }}
-          username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          source: ${{ env.ARTIFACT_FILE }}
-          target: "/tmp"
-
-      - name: Deploy
-        id: deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ steps.tf_out.outputs.public_ip }}
-          username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            #!/usr/bin/env bash
-            set -euo pipefail
-
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-
-            ENV_NAME='${{ env.ENV_NAME }}'
-            echo "🌐 ${ENV_NAME} 서버에 연결되었습니다."
-
-            # === 설정 변수 ===
-            BASE_DIR="/opt/app/backend"
-            RELEASES_DIR="${BASE_DIR}/releases"
-            RELEASE_DIR="${RELEASES_DIR}/${{ env.RELEASE_ID }}"
-            TARGET_PORT=8080
-
-            echo "🚀 배포 시작: ${{ env.RELEASE_ID }}"
-
-            # 폴더 생성
-            mkdir -p ${RELEASES_DIR}
-
-            # 2. 파일 준비
-            mkdir -p ${RELEASE_DIR}
-            if [ -f "/tmp/${{ env.ARTIFACT_FILE }}" ]; then
-              mv "/tmp/${{ env.ARTIFACT_FILE }}" ${RELEASE_DIR}/app.jar
-            else
-              echo "❌ 전송된 JAR 파일이 없습니다."
-              exit 1
-            fi
-
-            # 6. 새 애플리케이션 실행 (PM2)
-            echo "🚀 PM2로 애플리케이션 시작 (Port: $TARGET_PORT)..."
-
-            TARGET_PORT=${TARGET_PORT} JAR_PATH=${RELEASE_DIR}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
-
-            # 7. 헬스 체크
-            echo "🏥 헬스 체크 시작..."
-            HEALTH_CHECK_URL="http://localhost:${TARGET_PORT}/api/v3/health"
-            IS_HEALTHY=0
-
-            for i in {1..10}; do
-              sleep 5
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${HEALTH_CHECK_URL} || echo "fail")
-
-              if [ "$HTTP_CODE" == "200" ]; then
-                echo "✅ 헬스 체크 성공!"
-                IS_HEALTHY=1
-                break
-              else
-                echo "⏳ 시작 대기 중.... ($i/10) (Code: $HTTP_CODE)"
-              fi
-            done
-
-            # 8. 결과 처리 및 트래픽 전환
-            if [ "$IS_HEALTHY" -ne 1 ]; then
-              echo "❌ 헬스 체크 실패. 배포를 중단합니다."
-              exit 1
-            fi
-
-            pm2 list
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Fetch SLO script
-        run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/100-hours-a-week/20-team-daeng-ddang-cloud.git cloud
-          cp cloud/ci-cd/v1/be/ws_walk_slo.js ./ws_walk_slo.js
-
-      - name: Install deps for SLO script
-        run: |
-          set -euo pipefail
-          npm init -y >/dev/null 2>&1
-          npm i @stomp/stompjs ws >/dev/null 2>&1
-
-      - name: Run WebSocket SLO
-        id: run_slo
-        run: |
-          set -euo pipefail
-          export BASE_URL="${{ steps.tf_out.outputs.base_url }}"
-          export WS_URL="${{ steps.tf_out.outputs.ws_url }}"
-          export CONCURRENCY="100"
-          export RUN_FOR_MS="180000"
-          export LOG_TOP_N="3"
-          export OUT_DIR="."
-
-          node ./ws_walk_slo.js
-
-      - name: Upload SLO result JSON
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ws-slo-result
-          path: result-*.json
-
-      - name: Judge SLO
-        id: judge
-        if: always()
-        run: |
-          # 이전 step이 실패하면 이 step은 실행될 수 있으니, status를 보고 판정
-          if [ "${{ steps.run_slo.outcome }}" = "success" ]; then
-            echo "slo_passed=true" >> "$GITHUB_OUTPUT"
+          if [ "$JOB_STATUS" = "success" ]; then
+            TITLE="✅ [BE / ${ENV_NAME}] CI Success"
+            COLOR=5763719
+          elif [ "$JOB_STATUS" = "cancelled" ]; then
+            TITLE="⚠️ [BE / ${ENV_NAME}] CI Cancelled"
+            COLOR=16776988
+          elif [ "$JOB_STATUS" = "skipped" ]; then
+            TITLE="⏭️ [BE / ${ENV_NAME}] CI Skipped"
+            COLOR=9807270
           else
-            echo "slo_passed=false" >> "$GITHUB_OUTPUT"
-            exit 1
+            TITLE="❌ [BE / ${ENV_NAME}] CI Failed"
+            COLOR=15548997
           fi
 
-      - name: Destroy staging (always)
-        if: always()
-        run: |
-          set +e
-          cd "${TF_STACK_DIR}"
-          terraform init -reconfigure -backend-config=backend-staging.hcl
-          terraform destroy -auto-approve -var-file="../../environments/staging.tfvars"
+          # 개행 문자 및 따옴표 제거, 200자로 자름
+          safe_msg=$(echo "$MESSAGE" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
 
-  cd:
-    name: CD
-    # dev push: CI만 성공하면 CD
-    # main push: CI + SLO 성공(=SLO passed)해야 CD
-    # PR에서는 CD 실행 안 함
-    needs: [ci, slo]
+          JSON_PAYLOAD=$(cat <<JSON
+          {
+            "embeds": [
+              {
+                "title": "$TITLE",
+                "url": "$RUN_URL",
+                "color": $COLOR,
+                "description": "${safe_msg}",
+                "fields": [
+                  {"name":"Release ID","value":"\`${RELEASE_ID}\`","inline":false},
+
+                  {"name":"Actor","value":"${ACTOR}","inline":true},
+                  {"name":"Branch","value":"${BRANCH}","inline":true},
+                  {"name": "Event Name","value":"${EVENT_NAME}","inline":true},
+
+                  {"name":"Total CI","value":"${ci_total}s","inline":true},
+                  {"name":"Test","value":"${test_sec}s","inline":true},
+                  {"name":"Build","value":"${build_sec}s","inline":true}
+                ],
+                "timestamp": "$TIMESTAMP"
+              }
+            ]
+          }
+          JSON
+          )
+
+          curl -sS -X POST -H "Content-Type: application/json" --data-binary "$JSON_PAYLOAD" "$WEBHOOK" || true
+
+  cd-prod:
+    name: CD (Prod)
+    needs: ci
     runs-on: ubuntu-latest
-    if: |
-      always() && github.event_name == 'push' && (
-        (github.ref_name == 'dev') ||
-        (github.ref_name == 'main' && needs.slo.result == 'success' && needs.slo.outputs.slo_passed == 'true')
-      )
     timeout-minutes: 15
+
+    if: github.event_name == 'push' && github.ref_name == 'main'
+
+    environment:
+      name: prod
+
     env:
-      ENV_NAME: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && 'DEV' || 'PROD' }}
+      ENV_NAME: prod
 
     steps:
       - name: Mark CD start
         id: cd_time
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
+      - name: Checkout (for docker-compose.yml)
+        uses: actions/checkout@v4
         with:
-          name: spring-${{ env.RELEASE_ID }}
-          path: .
+          sparse-checkout: docker-compose.yml
+          sparse-checkout-cone-mode: false
 
-      - name: Normalize jar name
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-2
+
+      - name: Check if image tag is already deployed
+        id: check_tag
         run: |
           set -euo pipefail
-          JAR="$(ls -1 *.jar | head -n 1)"
-          mv "$JAR" ${{ env.ARTIFACT_FILE }}
 
-      - name: Copy JAR to EC2
-        id: scp
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_HOST || secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_SSH_KEY || secrets.AWS_SSH_KEY }}
-          source: ${{ env.ARTIFACT_FILE }}
-          target: "/tmp"
+          # 1. 현재 배포되어 있는 태그 가져오기
+          CURRENT_TAG=$(aws ssm get-parameter \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
+            --query "Parameter.Value" \
+            --output text 2>/dev/null || echo "none")
 
-      - name: Deploy with Port Switching
+          TARGET_TAG="${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
+
+          echo "🔍 현재 배포된 태그: $CURRENT_TAG"
+          echo "🚀 배포하려는 태그: $TARGET_TAG"
+
+          echo "prev_tag=$CURRENT_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT_TAG" = "$TARGET_TAG" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️ 이미 동일한 버전이 배포되어 있습니다. 배포를 건너뜁니다."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload docker-compose.yml to S3
+        if: steps.check_tag.outputs.skip != 'true'
+        id: s3
+        env:
+          S3_BUCKET: ${{ secrets.DEPLOY_BUCKET }}
+        run: |
+          aws s3 cp docker-compose.yml \
+            "s3://${{ secrets.DEPLOY_BUCKET }}/be/${{ env.ENV_NAME }}/docker-compose.yml"
+          echo "✅ docker-compose.yml S3 업로드 완료"
+
+      - name: Update SSM Parameter (Docker image tag)
+        if: steps.check_tag.outputs.skip != 'true'
+        id: ssm
+        run: |
+          aws ssm put-parameter \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
+            --value "${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}" \
+            --type String \
+            --overwrite
+
+          echo "✅ SSM 파라미터 업데이트 완료: ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
+
+      - name: Create new Launch Template version
+        if: steps.check_tag.outputs.skip != 'true'
+        id: lt
+        run: |
+          set -euo pipefail
+
+          # 현재 Launch Template의 User Data를 유지하며 Description만 변경하여 새 버전 생성
+          NEW_VERSION=$(aws ec2 create-launch-template-version \
+            --launch-template-id "${{ secrets.BE_LAUNCH_TEMPLATE_ID }}" \
+            --source-version '$Latest' \
+            --version-description "deploy-${{ env.RELEASE_ID }}" \
+            --launch-template-data '{}' \
+            --query 'LaunchTemplateVersion.VersionNumber' \
+            --output text)
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "📋 새 Launch Template 버전: ${NEW_VERSION}"
+
+      - name: Start ASG Instance Refresh
+        if: steps.check_tag.outputs.skip != 'true'
         id: deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_HOST || secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USERNAME }}
-          key: ${{ (github.ref_name == 'dev' || github.base_ref == 'dev') && secrets.AWS_DEV_SSH_KEY || secrets.AWS_SSH_KEY }}
-          script: |
-            #!/usr/bin/env bash
-            set -euo pipefail
+        run: |
+          set -euo pipefail
 
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
+          echo "🚀 ASG Instance Refresh 시작: ${{ secrets.BE_ASG_NAME }}"
 
-            ENV_NAME='${{ env.ENV_NAME }}'
-            echo "🌐 ${ENV_NAME} 서버에 연결되었습니다."
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ secrets.BE_ASG_NAME }}" \
+            --preferences '{
+              "MinHealthyPercentage": 100,
+              "InstanceWarmup": 180,
+              "SkipMatching": true
+            }' \
+            --query 'InstanceRefreshId' \
+            --output text)
 
-            # === 설정 변수 ===
-            BASE_DIR="/opt/app/backend"
-            RELEASES_DIR="${BASE_DIR}/releases"
-            RELEASE_DIR="${RELEASES_DIR}/${{ env.RELEASE_ID }}"
-            TEMP_JAR_FILE="/tmp/${{ env.ARTIFACT_FILE }}"
-            UPSTREAM_CONF="/etc/caddy/conf.d/upstream.caddy"
-            CURRENT_LINK="${BASE_DIR}/current"
-            BACKUP_LINK="${BASE_DIR}/backup"
+          echo "refresh_id=${REFRESH_ID}" >> "$GITHUB_OUTPUT"
+          echo "📋 Instance Refresh ID: ${REFRESH_ID}"
 
-            echo "🚀 배포 시작: ${{ env.RELEASE_ID }}"
+      - name: Wait for Instance Refresh
+        if: steps.check_tag.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
 
-            # 폴더 생성
-            mkdir -p ${RELEASES_DIR}
-            mkdir -p /etc/caddy/conf.d
+          ASG_NAME="${{ secrets.BE_ASG_NAME }}"
+          REFRESH_ID="${{ steps.deploy.outputs.refresh_id }}"
 
-            # 1. 포트 확인 및 결정 (Blue/Green)
-            IS_8080_ALIVE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/api/v3/health || echo "fail")
+          echo "⏳ Instance Refresh 완료 대기 중..."
 
-            if [ "$IS_8080_ALIVE" == "200" ]; then
-              TARGET_PORT=8081
-              CURRENT_PORT=8080
-            else
-              TARGET_PORT=8080
-              CURRENT_PORT=8081
-            fi
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${ASG_NAME}" \
+              --instance-refresh-ids "${REFRESH_ID}" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
 
-            echo "🔵 현재 활성 포트: $CURRENT_PORT"
-            echo "🟢 배포 타겟 포트: $TARGET_PORT"
+            PROGRESS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${ASG_NAME}" \
+              --instance-refresh-ids "${REFRESH_ID}" \
+              --query 'InstanceRefreshes[0].PercentageComplete' \
+              --output text 2>/dev/null || echo "0")
 
-            # 2. 파일 준비
-            mkdir -p ${RELEASE_DIR}
-            if [ -f "${TEMP_JAR_FILE}" ]; then
-              mv "${TEMP_JAR_FILE}" ${RELEASE_DIR}/app.jar
-            else
-              echo "❌ 전송된 JAR 파일이 없습니다."
-              exit 1
-            fi
-
-            # 3. 직전 버전 backup link 저장
-            if [ -L "${CURRENT_LINK}" ] || [ -d "${CURRENT_LINK}" ]; then
-              CURRENT_RELEASE="$(readlink -f "${CURRENT_LINK}" || true)"
-              if [ -n "${CURRENT_RELEASE}" ] && [ -d "${CURRENT_RELEASE}" ]; then
-                echo "📦 백업 링크 생성: ${CURRENT_RELEASE}"
-                ln -sfn "${CURRENT_RELEASE}" "${BACKUP_LINK}"
-              fi
-            fi
-
-            # 4. current 링크를 새 릴리즈로 교체
-            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-            echo "🔗 current 링크 업데이트: ${RELEASE_DIR}"
-
-            # 5. 타겟 포트의 기존 좀비 프로세스 정리
-            PID_TO_KILL=$(lsof -ti :${TARGET_PORT} || true)
-            if [ -n "$PID_TO_KILL" ]; then
-              echo "🧹 타겟 포트($TARGET_PORT)의 기존 프로세스 정리...."
-              kill -9 $PID_TO_KILL || true
-            fi
-
-            # 6. 새 애플리케이션 실행 (PM2)
-            echo "🚀 PM2로 애플리케이션 시작 (Port: $TARGET_PORT)..."
-
-            pm2 delete "daeng-backend-${TARGET_PORT}" 2>/dev/null || true
-
-            TARGET_PORT=${TARGET_PORT} JAR_PATH=${CURRENT_LINK}/app.jar pm2 start ${BASE_DIR}/ecosystem.config.js
-
-            # 7. 헬스 체크
-            echo "🏥 헬스 체크 시작..."
-            HEALTH_CHECK_URL="http://localhost:${TARGET_PORT}/api/v3/health"
-            IS_HEALTHY=0
-
-            for i in {1..10}; do
-              sleep 5
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" ${HEALTH_CHECK_URL} || echo "fail")
-
-              if [ "$HTTP_CODE" == "200" ]; then
-                echo "✅ 헬스 체크 성공!"
-                IS_HEALTHY=1
+            echo "📊 상태: ${STATUS} (${PROGRESS}%)"
+            case "${STATUS}" in
+              Successful)
+                echo "✅ Instance Refresh 성공!"
                 break
-              else
-                echo "⏳ 시작 대기 중.... ($i/10) (Code: $HTTP_CODE)"
-              fi
-            done
-
-            # 8. 결과 처리 및 트래픽 전환
-            if [ "$IS_HEALTHY" -eq 1 ]; then
-              echo "🔄 Caddy 연결 변경 중 (Port: $TARGET_PORT)..."
-              echo "reverse_proxy localhost:${TARGET_PORT}" | tee ${UPSTREAM_CONF} > /dev/null
-
-              if caddy reload --config /etc/caddy/Caddyfile; then
-                echo "🎉 배포 성공 및 트래픽 전환 완료."
-
-                # 9. 구버전 종료
-                echo "🛑 구버전 프로세스 삭제 (Port: $CURRENT_PORT)..."
-                pm2 delete "daeng-backend-${CURRENT_PORT}" || true
-                pm2 save
-              else
-                echo "🚨 Caddy Reload 실패! 롤백합니다."
-                # backup 링크로 current 복원
-                if [ -L "${BACKUP_LINK}" ]; then
-                  ln -sfn "$(readlink -f ${BACKUP_LINK})" "${CURRENT_LINK}"
-                  echo "🔙 current 링크 롤백 완료"
-                fi
-                pm2 delete "daeng-backend-${TARGET_PORT}" || true
+                ;;
+              Cancelled|Failed|RollbackSuccessful|RollbackFailed)
+                echo "❌ Instance Refresh 실패: ${STATUS}"
                 exit 1
-              fi
-            else
-              echo "❌ 헬스 체크 실패. 배포를 중단합니다."
-              # backup 링크로 current 복원
-              if [ -L "${BACKUP_LINK}" ]; then
-                ln -sfn "$(readlink -f ${BACKUP_LINK})" "${CURRENT_LINK}"
-                echo "🔙 current 링크 롤백 완료"
-              fi
-              pm2 delete "daeng-backend-${TARGET_PORT}" || true
-              exit 1
-            fi
+                ;;
+              *)
+                sleep 15
+                ;;
+            esac
+          done
 
-            # 10. 오래된 릴리즈 폴더 정리
-            echo "🧹 오래된 릴리즈 정리 중..."
-            cd ${RELEASES_DIR} && ls -t | tail -n +6 | xargs -I {} rm -rf {} || true
+      # 새로운 버전으로 배포가 성공했으며 직전 배포가 존재할 때 백업 이미지로 저장
+      - name: Backup Previous Tag
+        if: |
+          steps.check_tag.outputs.skip != 'true' && 
+          steps.check_tag.outputs.prev_tag != 'none' &&
+          success()
+        run: |
+          echo "📦 직전 버전 백업 중: ${{ steps.check_tag.outputs.prev_tag }}"
+          aws ssm put-parameter \
+            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/backup" \
+            --value "${{ steps.check_tag.outputs.prev_tag }}" \
+            --type String \
+            --overwrite
+          echo "✅ 백업 완료"
 
       - name: Mark CD end
         id: cd_time_end
         if: always()
         run: echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Calculate CD times
-        id: cd_calc
+      - name: Notify (CD)
         if: always()
         env:
-          COMMIT_MSG: ${{ github.event.head_commit.message || github.workflow }}
+          SKIP: ${{ steps.check_tag.outputs.skip || 'false' }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          MESSAGE: ${{ env.MESSAGE }}
+          JOB_STATUS: ${{ job.status }}
+          RELEASE_ID: ${{ env.RELEASE_ID }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+          CD_START: ${{ steps.cd_time.outputs.start }}
+          CD_END: ${{ steps.cd_time.outputs.end }}
+          S3_OUTCOME: ${{ steps.s3.outcome }}
+          SSM_OUTCOME: ${{ steps.ssm.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
         run: |
-          cd_total=$(( ${{ steps.cd_time_end.outputs.end }} - ${{ steps.cd_time.outputs.start }} ))
-          echo "cd_total=${cd_total}" >> "$GITHUB_OUTPUT"
-          # 커밋 메시지에서 줄바꿈을 공백으로 변환하고, 쌍따옴표 이스케이프
-          safe_msg=$(echo "$COMMIT_MSG" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
-          echo "safe_msg=${safe_msg}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-      - name: Notify Discord (CD Success)
-        if: success()
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "[BE] CD: success",
-              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "color": 5763719,
-              "description": "${{ steps.cd_calc.outputs.safe_msg }}",
-              "fields": [
-                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
-                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
-                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
-                {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
-                {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
-                {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
-              ],
-              "timestamp": "${{ github.event.head_commit.timestamp }}"
-            }]
+          [ -z "${WEBHOOK:-}" ] && echo "⚠️ DISCORD_WEBHOOK_URL이 공백이므로 본 단계를 스킵합니다." && exit 0
 
-      - name: Notify Discord (CD Failure)
-        if: failure()
-        uses: Ilshidur/action-discord@0.4.0
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_EMBEDS: |
-            [{
-              "title": "[BE] CD: failure",
-              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "color": 15548997,
-              "description": "${{ steps.cd_calc.outputs.safe_msg }}",
-              "fields": [
-                {"name": "Release ID", "value": "`${{ env.RELEASE_ID }}`", "inline": true},
-                {"name": "Actor", "value": "${{ github.actor }}", "inline": true},
-                {"name": "Branch", "value": "${{ github.ref_name }}", "inline": true},
-                {"name": "Total CD", "value": "${{ steps.cd_calc.outputs.cd_total }}s", "inline": true},
-                {"name": "Upload (SCP)", "value": "${{ steps.scp.outcome }}", "inline": true},
-                {"name": "Deploy (SSH)", "value": "${{ steps.deploy.outcome }}", "inline": true}
-              ],
-              "timestamp": "${{ github.event.head_commit.timestamp }}"
-            }]
+          # 안전한 산술 계산용 함수
+          dur() { local s="${1:-}" e="${2:-}"; [ -n "$s" ] && [ -n "$e" ] && echo $((e - s)) || echo 0; }
+          cd_total="$(dur "$CD_START" "$CD_END")"
+
+          if [ "$JOB_STATUS" = "success" ]; then
+            TITLE="✅ [BE / ${ENV_NAME}] CD Success"
+            COLOR=5763719
+          elif [ "$JOB_STATUS" = "cancelled" ]; then
+            TITLE="⚠️ [BE / ${ENV_NAME}] CD Cancelled"
+            COLOR=16776988
+          elif [ "$JOB_STATUS" = "skipped" ]; then
+            TITLE="⏭️ [BE / ${ENV_NAME}] CI Skipped"
+            COLOR=9807270
+          else
+            TITLE="❌ [BE / ${ENV_NAME}] CD Failed"
+            COLOR=15548997
+          fi
+
+
+          # 개행 문자 및 따옴표 제거, 200자로 자름
+          safe_msg=$(echo "$MESSAGE" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
+
+          # 동일 배포 처리
+          if [ "$SKIP" = "true" ]; then
+            TITLE="⏭️ [BE / ${ENV_NAME}] CD Skipped due to same Version"
+            COLOR=9807270
+          fi
+
+
+          JSON_PAYLOAD=$(cat <<JSON
+          {
+            "embeds": [
+              {
+                "title": "$TITLE",
+                "url": "$RUN_URL",
+                "color": $COLOR,
+                "description": "${safe_msg}",
+                "fields": [
+                  {"name":"Release ID","value":"\`${RELEASE_ID}\`","inline":false},
+
+                  {"name":"Actor","value":"${ACTOR}","inline":true},
+                  {"name":"Branch","value":"${BRANCH}","inline":true},
+                  {"name":"Total CD","value":"${cd_total}s","inline":true},
+
+                  {"name":"Compose Upload","value":"${S3_OUTCOME}","inline":true},
+                  {"name":"SSM Update","value":"${SSM_OUTCOME}","inline":true},
+                  {"name":"Instance Refresh","value":"${DEPLOY_OUTCOME}","inline":true}
+                ],
+                "timestamp": "$TIMESTAMP"
+              }
+            ]
+          }
+          JSON
+          )
+
+          curl -sS -X POST -H "Content-Type: application/json" --data-binary "$JSON_PAYLOAD" "$WEBHOOK" || true

@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @RequiredArgsConstructor
 public class MissionJudgeService {
+    private static final int MAX_UPLOADS_PER_WALK = 3;
 
     private final AccessValidator accessValidator;
     private final MissionRepository missionRepository;
@@ -50,6 +51,9 @@ public class MissionJudgeService {
         List<MissionUpload> uploads = missionUploadRepository.findAllByWalk(walk);
         if (uploads.isEmpty()) {
             throw new BaseException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+        if (uploads.size() > MAX_UPLOADS_PER_WALK) {
+            throw new BaseException(ErrorCode.MISSION_UPLOAD_LIMIT_EXCEEDED);
         }
 
         List<Long> missionIds = uploads.stream()
@@ -71,6 +75,35 @@ public class MissionJudgeService {
         saveMissionRecords(uploads, missions, fastApiResponse, walk, submittedAt);
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public MissionJudgeResponse getResult(Long userId, Long walkId) {
+        Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
+
+        List<MissionRecord> records = missionRecordRepository.findAllByWalk_Id(walk.getId());
+        if (records.isEmpty()) {
+            throw new BaseException(ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        List<MissionJudgeResponse.MissionResult> missionResults = records.stream()
+                .map(record -> MissionJudgeResponse.MissionResult.from(
+                        record.getMission().getId(),
+                        record.getMission().getTitle(),
+                        record.getStatus() == MissionRecordStatus.SUCCESS
+                ))
+                .toList();
+        LocalDateTime analyzedAt = records.stream()
+                .map(MissionRecord::getAnalyzedAt)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        return MissionJudgeResponse.from(
+                null,
+                walkId,
+                analyzedAt,
+                missionResults
+        );
     }
 
     private void saveMissionRecords(

@@ -30,6 +30,7 @@ public class UserInfoResponse {
         if (user.getRegion() == null) {
             return UserInfoResponse.builder()
                     .userId(user.getId())
+                    .kakaoEmail(user.getKakaoEmail())
                     .regionId(null)
                     .parentRegionId(null)
                     .region(null)
