@@ -31,15 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    environment:
-      name: >-
-        ${{
-          (github.event_name == 'pull_request' && github.base_ref == 'main') && 'prod' ||
-          (github.event_name == 'pull_request') && 'dev' ||
-          (github.ref_name == 'main' && 'prod') ||
-          'dev'
-        }}
-
     steps:
       - name: Mark CI start
         id: ci_time
