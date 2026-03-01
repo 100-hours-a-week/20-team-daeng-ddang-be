@@ -1,0 +1,21 @@
+services:
+  daeng-backend:
+    image: ${DOCKER_IMAGE}
+    container_name: daeng-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - /opt/app/backend/logs:/app/logs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:8080/api/v3/health >/dev/null || exit 1",
+        ]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+      start_period: 30s
