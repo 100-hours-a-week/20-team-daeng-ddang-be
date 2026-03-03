@@ -96,6 +96,12 @@ analysis:
     enabled: ${ANALYSIS_BACKPRESSURE_ENABLED:true}
     max-active-tasks: ${ANALYSIS_BACKPRESSURE_MAX_ACTIVE_TASKS:180}
     retry-after-seconds: ${ANALYSIS_BACKPRESSURE_RETRY_AFTER_SECONDS:3}
+  sweep:
+    enabled: ${ANALYSIS_SWEEP_ENABLED:true}
+    fixed-delay-ms: ${ANALYSIS_SWEEP_FIXED_DELAY_MS:30000}
+    pending-timeout-seconds: ${ANALYSIS_SWEEP_PENDING_TIMEOUT_SECONDS:120}
+    running-timeout-seconds: ${ANALYSIS_SWEEP_RUNNING_TIMEOUT_SECONDS:300}
+    batch-size: ${ANALYSIS_SWEEP_BATCH_SIZE:200}
   async:
     executor:
       core-pool-size: ${ANALYSIS_ASYNC_CORE_POOL_SIZE:16}
