@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.service;
 
+import com.daengddang.daengdong_map.analysis.AnalysisBackpressureGuard;
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.dog.Dog;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ExternalAnalysisTaskService {
 
+    private final AnalysisBackpressureGuard analysisBackpressureGuard;
     private final AccessValidator accessValidator;
     private final MissionUploadRepository missionUploadRepository;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
@@ -34,6 +36,7 @@ public class ExternalAnalysisTaskService {
 
     @Transactional
     public AnalysisTaskAcceptedResponse createMissionTask(Long userId, Long walkId) {
+        analysisBackpressureGuard.validateOrThrow();
         Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
         if (walk.getStatus() != WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
@@ -46,6 +49,7 @@ public class ExternalAnalysisTaskService {
 
     @Transactional
     public AnalysisTaskAcceptedResponse createExpressionTask(Long userId, Long walkId, ExpressionAnalyzeRequest dto) {
+        analysisBackpressureGuard.validateOrThrow();
         if (dto == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
@@ -55,6 +59,7 @@ public class ExternalAnalysisTaskService {
 
     @Transactional
     public AnalysisTaskAcceptedResponse createHealthcareTask(Long userId, HealthcareAnalyzeRequest dto) {
+        analysisBackpressureGuard.validateOrThrow();
         if (dto == null) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
