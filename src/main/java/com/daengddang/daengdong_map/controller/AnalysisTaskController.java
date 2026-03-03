@@ -9,8 +9,11 @@ import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskAcceptedRespon
 import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskDetailResponse;
 import com.daengddang.daengdong_map.security.AuthUser;
 import com.daengddang.daengdong_map.service.ExternalAnalysisTaskService;
+import com.daengddang.daengdong_map.sse.AnalysisTaskSseService;
+import com.daengddang.daengdong_map.sse.AsyncSseProperties;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/v3")
@@ -27,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalysisTaskController implements AnalysisTaskApi {
 
     private final ExternalAnalysisTaskService externalAnalysisTaskService;
+    private final AsyncSseProperties asyncSseProperties;
+    private final AnalysisTaskSseService analysisTaskSseService;
 
     @PostMapping("/walks/{walkId}/missions/analysis/tasks")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -86,5 +92,28 @@ public class AnalysisTaskController implements AnalysisTaskApi {
         AnalysisTaskDetailResponse response =
                 externalAnalysisTaskService.getHealthcareTask(authUser.getUserId(), taskId);
         return ApiResponse.success(SuccessCode.ANALYSIS_TASK_RETRIEVED, response);
+    }
+
+    @GetMapping(value = "/walks/{walkId}/analysis/tasks/{taskId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Override
+    public SseEmitter subscribeTaskEvents(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable Long walkId,
+            @PathVariable String taskId
+    ) {
+        AnalysisTaskDetailResponse response =
+                externalAnalysisTaskService.getTask(authUser.getUserId(), walkId, taskId);
+        return analysisTaskSseService.subscribe(response, asyncSseProperties.getEmitterTimeoutMs());
+    }
+
+    @GetMapping(value = "/healthcares/analysis/tasks/{taskId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Override
+    public SseEmitter subscribeHealthcareTaskEvents(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable String taskId
+    ) {
+        AnalysisTaskDetailResponse response =
+                externalAnalysisTaskService.getHealthcareTask(authUser.getUserId(), taskId);
+        return analysisTaskSseService.subscribe(response, asyncSseProperties.getEmitterTimeoutMs());
     }
 }
