@@ -80,6 +80,34 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
         return countByStatusIn(List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING));
     }
 
+    List<ExternalAnalysisTask> findByStatusAndRequestedAtBeforeOrderByRequestedAtAsc(
+            ExternalAnalysisTaskStatus status,
+            LocalDateTime requestedAt,
+            Pageable pageable
+    );
+
+    List<ExternalAnalysisTask> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+            ExternalAnalysisTaskStatus status,
+            LocalDateTime startedAt,
+            Pageable pageable
+    );
+
+    default List<ExternalAnalysisTask> findStalePendingBatch(LocalDateTime cutoff, int batchSize) {
+        return findByStatusAndRequestedAtBeforeOrderByRequestedAtAsc(
+                ExternalAnalysisTaskStatus.PENDING,
+                cutoff,
+                PageRequest.of(0, batchSize)
+        );
+    }
+
+    default List<ExternalAnalysisTask> findStaleRunningBatch(LocalDateTime cutoff, int batchSize) {
+        return findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+                ExternalAnalysisTaskStatus.RUNNING,
+                cutoff,
+                PageRequest.of(0, batchSize)
+        );
+    }
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             update ExternalAnalysisTask task

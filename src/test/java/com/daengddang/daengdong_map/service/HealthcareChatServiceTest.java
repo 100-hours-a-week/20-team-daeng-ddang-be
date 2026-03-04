@@ -117,7 +117,7 @@ class HealthcareChatServiceTest {
                 FastApiHealthcareChatRequest.of(
                         10,
                         "vet_sess_abc",
-                        "hello",
+                        FastApiHealthcareChatRequest.Message.of("user", "hello"),
                         null,
                         FastApiHealthcareChatRequest.UserContext.of(3, 7, "말티즈"),
                         java.util.Collections.emptyList()
@@ -153,7 +153,7 @@ class HealthcareChatServiceTest {
                 FastApiHealthcareChatRequest.of(
                         10,
                         "vet_sess_abc",
-                        "hello",
+                        FastApiHealthcareChatRequest.Message.of("user", "hello"),
                         null,
                         FastApiHealthcareChatRequest.UserContext.of(3, 7, "말티즈"),
                         java.util.Collections.emptyList()
