@@ -47,6 +47,8 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
             Pageable pageable
     );
 
+    long countByStatusIn(List<ExternalAnalysisTaskStatus> statuses);
+
     default Optional<ExternalAnalysisTask> findLatestByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
         return findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
     }
@@ -72,6 +74,10 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
                 ExternalAnalysisTaskStatus.PENDING,
                 PageRequest.of(0, batchSize)
         );
+    }
+
+    default long countActiveTasks() {
+        return countByStatusIn(List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING));
     }
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
