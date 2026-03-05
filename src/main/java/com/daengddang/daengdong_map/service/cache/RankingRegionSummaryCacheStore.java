@@ -3,23 +3,18 @@ package com.daengddang.daengdong_map.service.cache;
 import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankItemResponse;
 import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankingListResponse;
 import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankingSummaryResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.StringCodec;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -30,8 +25,7 @@ public class RankingRegionSummaryCacheStore {
     private static final String NULL_REGION = "all";
     private static final String NULL_USER = "anon";
 
-    private final RedissonClient redissonClient;
-    private final ObjectMapper objectMapper;
+    private final RedisJsonBucketCacheHelper cacheHelper;
     private final CacheDefaultProperties defaultProperties;
     private final RankingRegionSummaryCacheProperties properties;
     private final RankingRegionSummaryCacheMetrics metrics;
@@ -46,19 +40,13 @@ public class RankingRegionSummaryCacheStore {
         }
 
         try {
-            RBucket<String> bucket = redissonClient.getBucket(
-                    buildSummaryKey(periodType, periodValue, requestedRegionId, userId),
-                    StringCodec.INSTANCE
-            );
-            String cachedJson = bucket.get();
-            if (cachedJson == null || cachedJson.isBlank()) {
-                metrics.recordMiss();
-                return Optional.empty();
-            }
-            RegionRankingSummaryPayload payload =
-                    objectMapper.readValue(cachedJson, RegionRankingSummaryPayload.class);
-            metrics.recordHit();
-            return Optional.of(fromPayload(payload));
+            return cacheHelper.read(
+                            buildSummaryKey(periodType, periodValue, requestedRegionId, userId),
+                            RegionRankingSummaryPayload.class,
+                            metrics::recordMiss,
+                            metrics::recordHit
+                    )
+                    .map(this::fromPayload);
         } catch (Exception e) {
             metrics.recordReadError();
             metrics.recordFallbackError();
@@ -77,18 +65,15 @@ public class RankingRegionSummaryCacheStore {
         }
 
         try {
-            String payload = objectMapper.writeValueAsString(toPayload(response));
-            redissonClient.getBucket(
-                            buildSummaryKey(periodType, periodValue, requestedRegionId, userId),
-                            StringCodec.INSTANCE
-                    )
-                    .setAsync(payload, resolveTtlSeconds(), TimeUnit.SECONDS)
-                    .whenComplete((result, throwable) -> {
-                        if (throwable != null) {
-                            metrics.recordWriteError();
-                            log.warn("지역 랭킹 요약 캐시 저장 실패 (Region ranking summary cache write failed)", throwable);
-                        }
-                    });
+            cacheHelper.writeAsync(
+                    buildSummaryKey(periodType, periodValue, requestedRegionId, userId),
+                    toPayload(response),
+                    resolveTtlSeconds(),
+                    throwable -> {
+                        metrics.recordWriteError();
+                        log.warn("지역 랭킹 요약 캐시 저장 실패 (Region ranking summary cache write failed)", throwable);
+                    }
+            );
         } catch (Exception e) {
             metrics.recordWriteError();
             log.warn("지역 랭킹 요약 캐시 저장 실패 (Region ranking summary cache write failed)", e);
@@ -113,18 +98,13 @@ public class RankingRegionSummaryCacheStore {
         }
 
         try {
-            RBucket<String> bucket = redissonClient.getBucket(
-                    buildListKey(periodType, periodValue, cursor, limit),
-                    StringCodec.INSTANCE
-            );
-            String cachedJson = bucket.get();
-            if (cachedJson == null || cachedJson.isBlank()) {
-                metrics.recordMiss();
-                return Optional.empty();
-            }
-            RegionRankingListPayload payload = objectMapper.readValue(cachedJson, RegionRankingListPayload.class);
-            metrics.recordHit();
-            return Optional.of(fromListPayload(payload));
+            return cacheHelper.read(
+                            buildListKey(periodType, periodValue, cursor, limit),
+                            RegionRankingListPayload.class,
+                            metrics::recordMiss,
+                            metrics::recordHit
+                    )
+                    .map(this::fromListPayload);
         } catch (Exception e) {
             metrics.recordReadError();
             metrics.recordFallbackError();
@@ -143,15 +123,15 @@ public class RankingRegionSummaryCacheStore {
         }
 
         try {
-            String payload = objectMapper.writeValueAsString(toListPayload(response));
-            redissonClient.getBucket(buildListKey(periodType, periodValue, cursor, limit), StringCodec.INSTANCE)
-                    .setAsync(payload, resolveTtlSeconds(), TimeUnit.SECONDS)
-                    .whenComplete((result, throwable) -> {
-                        if (throwable != null) {
-                            metrics.recordWriteError();
-                            log.warn("지역 랭킹 목록 캐시 저장 실패 (Region ranking list cache write failed)", throwable);
-                        }
-                    });
+            cacheHelper.writeAsync(
+                    buildListKey(periodType, periodValue, cursor, limit),
+                    toListPayload(response),
+                    resolveTtlSeconds(),
+                    throwable -> {
+                        metrics.recordWriteError();
+                        log.warn("지역 랭킹 목록 캐시 저장 실패 (Region ranking list cache write failed)", throwable);
+                    }
+            );
         } catch (Exception e) {
             metrics.recordWriteError();
             log.warn("지역 랭킹 목록 캐시 저장 실패 (Region ranking list cache write failed)", e);

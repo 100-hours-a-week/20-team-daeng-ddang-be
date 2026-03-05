@@ -11,16 +11,12 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.StringCodec;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -31,8 +27,7 @@ public class RankingPersonalCacheStore {
     private static final String NULL_REGION = "all";
     private static final String NULL_USER = "anon";
 
-    private final RedissonClient redissonClient;
-    private final ObjectMapper objectMapper;
+    private final RedisJsonBucketCacheHelper cacheHelper;
     private final CacheDefaultProperties defaultProperties;
     private final RankingPersonalCacheProperties properties;
     private final RankingPersonalCacheMetrics metrics;
@@ -47,19 +42,13 @@ public class RankingPersonalCacheStore {
         }
 
         try {
-            RBucket<String> bucket = redissonClient.getBucket(
-                    buildSummaryKey(periodType, periodValue, regionId, userId),
-                    StringCodec.INSTANCE
-            );
-            String cachedJson = bucket.get();
-            if (cachedJson == null || cachedJson.isBlank()) {
-                metrics.recordMiss();
-                return Optional.empty();
-            }
-            PersonalRankingSummaryPayload payload =
-                    objectMapper.readValue(cachedJson, PersonalRankingSummaryPayload.class);
-            metrics.recordHit();
-            return Optional.of(fromSummaryPayload(payload));
+            return cacheHelper.read(
+                            buildSummaryKey(periodType, periodValue, regionId, userId),
+                            PersonalRankingSummaryPayload.class,
+                            metrics::recordMiss,
+                            metrics::recordHit
+                    )
+                    .map(this::fromSummaryPayload);
         } catch (Exception e) {
             metrics.recordReadError();
             metrics.recordFallbackError();
@@ -79,15 +68,15 @@ public class RankingPersonalCacheStore {
 
         try {
             String key = buildSummaryKey(periodType, periodValue, regionId, userId);
-            String payload = objectMapper.writeValueAsString(toSummaryPayload(response));
-            redissonClient.getBucket(key, StringCodec.INSTANCE)
-                    .setAsync(payload, resolveTtlSeconds(), TimeUnit.SECONDS)
-                    .whenComplete((result, throwable) -> {
-                        if (throwable != null) {
-                            metrics.recordWriteError();
-                            log.warn("개인 랭킹 요약 캐시 저장 실패 (Personal ranking summary cache write failed)", throwable);
-                        }
-                    });
+            cacheHelper.writeAsync(
+                    key,
+                    toSummaryPayload(response),
+                    resolveTtlSeconds(),
+                    throwable -> {
+                        metrics.recordWriteError();
+                        log.warn("개인 랭킹 요약 캐시 저장 실패 (Personal ranking summary cache write failed)", throwable);
+                    }
+            );
         } catch (Exception e) {
             metrics.recordWriteError();
             log.warn("개인 랭킹 요약 캐시 저장 실패 (Personal ranking summary cache write failed)", e);
@@ -105,19 +94,13 @@ public class RankingPersonalCacheStore {
         }
 
         try {
-            RBucket<String> bucket = redissonClient.getBucket(
-                    buildListKey(periodType, periodValue, regionId, cursor, limit),
-                    StringCodec.INSTANCE
-            );
-            String cachedJson = bucket.get();
-            if (cachedJson == null || cachedJson.isBlank()) {
-                metrics.recordMiss();
-                return Optional.empty();
-            }
-            PersonalRankingListPayload payload =
-                    objectMapper.readValue(cachedJson, PersonalRankingListPayload.class);
-            metrics.recordHit();
-            return Optional.of(fromListPayload(payload));
+            return cacheHelper.read(
+                            buildListKey(periodType, periodValue, regionId, cursor, limit),
+                            PersonalRankingListPayload.class,
+                            metrics::recordMiss,
+                            metrics::recordHit
+                    )
+                    .map(this::fromListPayload);
         } catch (Exception e) {
             metrics.recordReadError();
             metrics.recordFallbackError();
@@ -138,15 +121,15 @@ public class RankingPersonalCacheStore {
 
         try {
             String key = buildListKey(periodType, periodValue, regionId, cursor, limit);
-            String payload = objectMapper.writeValueAsString(toListPayload(response));
-            redissonClient.getBucket(key, StringCodec.INSTANCE)
-                    .setAsync(payload, resolveTtlSeconds(), TimeUnit.SECONDS)
-                    .whenComplete((result, throwable) -> {
-                        if (throwable != null) {
-                            metrics.recordWriteError();
-                            log.warn("개인 랭킹 목록 캐시 저장 실패 (Personal ranking list cache write failed)", throwable);
-                        }
-                    });
+            cacheHelper.writeAsync(
+                    key,
+                    toListPayload(response),
+                    resolveTtlSeconds(),
+                    throwable -> {
+                        metrics.recordWriteError();
+                        log.warn("개인 랭킹 목록 캐시 저장 실패 (Personal ranking list cache write failed)", throwable);
+                    }
+            );
         } catch (Exception e) {
             metrics.recordWriteError();
             log.warn("개인 랭킹 목록 캐시 저장 실패 (Personal ranking list cache write failed)", e);
