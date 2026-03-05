@@ -151,3 +151,7 @@ cache:
       summary-key: ${CACHE_RANKING_REGION_SUMMARY_KEY:cache:rankings:regions:summary}
       list-key: ${CACHE_RANKING_REGION_LIST_KEY:cache:rankings:regions:list}
       key-version: ${CACHE_RANKING_REGION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
+    contribution:
+      summary-key: ${CACHE_RANKING_CONTRIBUTION_SUMMARY_KEY:cache:rankings:regions:contributions:summary}
+      list-key: ${CACHE_RANKING_CONTRIBUTION_LIST_KEY:cache:rankings:regions:contributions:list}
+      key-version: ${CACHE_RANKING_CONTRIBUTION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
