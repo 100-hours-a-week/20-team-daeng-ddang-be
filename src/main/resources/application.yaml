@@ -147,3 +147,7 @@ cache:
       summary-key: ${CACHE_RANKING_PERSONAL_SUMMARY_KEY:cache:rankings:dogs:summary}
       list-key: ${CACHE_RANKING_PERSONAL_LIST_KEY:cache:rankings:dogs:list}
       key-version: ${CACHE_RANKING_PERSONAL_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
+    region:
+      summary-key: ${CACHE_RANKING_REGION_SUMMARY_KEY:cache:rankings:regions:summary}
+      list-key: ${CACHE_RANKING_REGION_LIST_KEY:cache:rankings:regions:list}
+      key-version: ${CACHE_RANKING_REGION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
