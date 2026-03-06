@@ -39,9 +39,8 @@ public class AccessValidator {
         }
         Walk walk = walkRepository.findById(walkId)
                 .orElseThrow(() -> new BaseException(ErrorCode.WALK_RECORD_NOT_FOUND));
-        if (!userId.equals(walk.getDog().getUser().getId())) {
-            throw new BaseException(ErrorCode.FORBIDDEN);
-        }
-        return walk;
+
+        return walkRepository.findOwnedWalkByIdWithDogAndUser(walkId, userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.FORBIDDEN));
     }
 }
