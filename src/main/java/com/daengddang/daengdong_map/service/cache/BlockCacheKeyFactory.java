@@ -10,11 +10,10 @@ public class BlockCacheKeyFactory {
     private final BlockCacheProperties properties;
     private final CacheDefaultProperties defaultProperties;
 
-    public String buildNearbyListKey(int baseX, int baseY, int range) {
+    public String buildAreaKey(int areaX, int areaY) {
         return resolvePrefix(properties.getKey())
-                + ":bx:" + baseX
-                + ":by:" + baseY
-                + ":range:" + range;
+                + ":ax:" + areaX
+                + ":ay:" + areaY;
     }
 
     private String resolvePrefix(String baseKey) {

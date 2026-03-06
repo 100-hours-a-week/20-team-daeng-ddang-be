@@ -10,6 +10,7 @@ import com.daengddang.daengdong_map.dto.websocket.outbound.BlocksSyncPayload;
 import com.daengddang.daengdong_map.repository.BlockOwnershipRepository;
 import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import com.daengddang.daengdong_map.service.cache.BlockCacheMetrics;
+import com.daengddang.daengdong_map.service.cache.BlockCachePolicy;
 import com.daengddang.daengdong_map.service.cache.BlockCacheStore;
 import com.daengddang.daengdong_map.websocket.RedisWebSocketBroadcaster;
 import com.daengddang.daengdong_map.websocket.WebSocketDestinations;
@@ -28,12 +29,12 @@ import org.springframework.stereotype.Service;
 public class BlockSyncService {
 
     private static final int AREA_SIZE = 13;
-    private static final int AREA_CACHE_RANGE = AREA_SIZE / 2;
     private static final long SYNC_MIN_INTERVAL_SECONDS = 2;
 
     private final BlockOwnershipRepository blockOwnershipRepository;
     private final BlockCacheStore blockCacheStore;
     private final BlockCacheMetrics blockCacheMetrics;
+    private final BlockCachePolicy blockCachePolicy;
     private final RedisWebSocketBroadcaster broadcaster;
     private final WalkRuntimeStateRegistry stateRegistry;
     private final AfterCommitExecutor afterCommitExecutor;
@@ -71,14 +72,13 @@ public class BlockSyncService {
     }
 
     private void sendBlocksSync(int blockX, int blockY, String areaKey) {
-        AreaRange range = toAreaRange(blockX, blockY);
-        int baseX = range.minX + AREA_CACHE_RANGE;
-        int baseY = range.minY + AREA_CACHE_RANGE;
-        Optional<NearbyBlockListResponse> cached = blockCacheStore.getNearby(baseX, baseY, AREA_CACHE_RANGE);
+        int areaX = Math.floorDiv(blockX, AREA_SIZE);
+        int areaY = Math.floorDiv(blockY, AREA_SIZE);
+        Optional<NearbyBlockListResponse> cached = blockCacheStore.getArea(areaX, areaY);
 
         List<BlockSyncEntry> entries = cached
                 .map(this::toSyncEntries)
-                .orElseGet(() -> loadEntriesFromDbAndCache(range, baseX, baseY));
+                .orElseGet(() -> loadEntriesFromDbAndCache(areaX, areaY));
 
         BlocksSyncPayload payload = BlocksSyncPayload.from(entries);
         WebSocketMessage<BlocksSyncPayload> message =
@@ -88,10 +88,11 @@ public class BlockSyncService {
                 broadcaster.broadcast(WebSocketDestinations.blocks(areaKey), message));
     }
 
-    private List<BlockSyncEntry> loadEntriesFromDbAndCache(AreaRange range, int baseX, int baseY) {
+    private List<BlockSyncEntry> loadEntriesFromDbAndCache(int areaX, int areaY) {
+        BlockCachePolicy.AreaRange areaRange = blockCachePolicy.toAreaRange(areaX, areaY);
         blockCacheMetrics.recordDbLoad();
         List<BlockOwnershipView> ownerships = blockOwnershipRepository.findAllByBlockRange(
-                range.minX, range.maxX, range.minY, range.maxY
+                areaRange.minX(), areaRange.maxX(), areaRange.minY(), areaRange.maxY()
         );
         List<BlockSyncEntry> entries = ownerships.stream()
                 .map(this::toBlockSyncEntry)
@@ -103,7 +104,7 @@ public class BlockSyncService {
                         ownership.getAcquiredAt()
                 ))
                 .toList();
-        blockCacheStore.putNearby(baseX, baseY, AREA_CACHE_RANGE, NearbyBlockListResponse.from(nearbyBlocks));
+        blockCacheStore.putArea(areaX, areaY, NearbyBlockListResponse.from(nearbyBlocks));
         return entries;
     }
 
@@ -113,21 +114,10 @@ public class BlockSyncService {
                 .toList();
     }
 
-    private AreaRange toAreaRange(int blockX, int blockY) {
-        int areaX = Math.floorDiv(blockX, AREA_SIZE);
-        int areaY = Math.floorDiv(blockY, AREA_SIZE);
-        int minX = areaX * AREA_SIZE;
-        int minY = areaY * AREA_SIZE;
-        return new AreaRange(minX, minX + AREA_SIZE - 1, minY, minY + AREA_SIZE - 1);
-    }
-
     private BlockSyncEntry toBlockSyncEntry(BlockOwnershipView ownership) {
         return BlockSyncEntry.from(
                 BlockIdUtil.toBlockId(ownership.getBlockX(), ownership.getBlockY()),
                 ownership.getDogId()
         );
-    }
-
-    private record AreaRange(int minX, int maxX, int minY, int maxY) {
     }
 }

@@ -14,8 +14,6 @@ public class BlockCacheProperties {
     private Boolean enabled;
     private Long ttlSeconds;
     private Integer jitterPercent;
-    private Integer invalidateMinRadiusMeters = 0;
-    private Integer invalidateMaxRadiusMeters = 1500;
     private String keyVersion;
     private String key = "cache:blocks:list";
 }

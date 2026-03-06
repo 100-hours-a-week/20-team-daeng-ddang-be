@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 public class BlockCachePolicy {
 
     private static final double BLOCK_METERS = 80.0;
+    public static final int AREA_SIZE = 13;
 
     private final CacheDefaultProperties defaultProperties;
     private final BlockCacheProperties properties;
@@ -38,34 +39,40 @@ public class BlockCachePolicy {
         return (int) Math.ceil(radiusMeters / BLOCK_METERS);
     }
 
-    public Set<String> buildInvalidateKeys(int changedBlockX, int changedBlockY) {
-        int minRange = toRange(resolveMinInvalidateRadiusMeters());
-        int maxRange = toRange(resolveMaxInvalidateRadiusMeters());
+    public int toAreaX(int blockX) {
+        return Math.floorDiv(blockX, AREA_SIZE);
+    }
+
+    public int toAreaY(int blockY) {
+        return Math.floorDiv(blockY, AREA_SIZE);
+    }
+
+    public Set<String> buildTouchedAreaKeys(int minX, int maxX, int minY, int maxY) {
+        int minAreaX = toAreaX(minX);
+        int maxAreaX = toAreaX(maxX);
+        int minAreaY = toAreaY(minY);
+        int maxAreaY = toAreaY(maxY);
         Set<String> keys = new LinkedHashSet<>();
-        for (int range = minRange; range <= maxRange; range++) {
-            for (int baseX = changedBlockX - range; baseX <= changedBlockX + range; baseX++) {
-                for (int baseY = changedBlockY - range; baseY <= changedBlockY + range; baseY++) {
-                    keys.add(blockCacheKeyFactory.buildNearbyListKey(baseX, baseY, range));
-                }
+        for (int areaX = minAreaX; areaX <= maxAreaX; areaX++) {
+            for (int areaY = minAreaY; areaY <= maxAreaY; areaY++) {
+                keys.add(blockCacheKeyFactory.buildAreaKey(areaX, areaY));
             }
         }
         return keys;
     }
 
-    private int resolveMinInvalidateRadiusMeters() {
-        return clampNonNegative(properties.getInvalidateMinRadiusMeters());
+    public Set<String> buildInvalidateKeys(int changedBlockX, int changedBlockY) {
+        Set<String> keys = new LinkedHashSet<>();
+        keys.add(blockCacheKeyFactory.buildAreaKey(toAreaX(changedBlockX), toAreaY(changedBlockY)));
+        return keys;
     }
 
-    private int resolveMaxInvalidateRadiusMeters() {
-        int min = resolveMinInvalidateRadiusMeters();
-        int max = clampNonNegative(properties.getInvalidateMaxRadiusMeters());
-        return Math.max(min, max);
+    public AreaRange toAreaRange(int areaX, int areaY) {
+        int minX = areaX * AREA_SIZE;
+        int minY = areaY * AREA_SIZE;
+        return new AreaRange(minX, minX + AREA_SIZE - 1, minY, minY + AREA_SIZE - 1);
     }
 
-    private int clampNonNegative(Integer value) {
-        if (value == null) {
-            return 0;
-        }
-        return Math.clamp(value, 0, Integer.MAX_VALUE);
+    public record AreaRange(int minX, int maxX, int minY, int maxY) {
     }
 }

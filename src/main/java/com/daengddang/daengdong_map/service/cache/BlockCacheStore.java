@@ -28,7 +28,7 @@ public class BlockCacheStore {
     private final BlockCacheKeyFactory blockCacheKeyFactory;
     private final BlockCacheMetrics metrics;
 
-    public Optional<NearbyBlockListResponse> getNearby(int baseX, int baseY, int range) {
+    public Optional<NearbyBlockListResponse> getArea(int areaX, int areaY) {
         if (!isEnabled()) {
             metrics.recordBypassDisabled();
             return Optional.empty();
@@ -36,7 +36,7 @@ public class BlockCacheStore {
 
         try {
             return cacheHelper.read(
-                            blockCacheKeyFactory.buildNearbyListKey(baseX, baseY, range),
+                            blockCacheKeyFactory.buildAreaKey(areaX, areaY),
                             BlockNearbyListPayload.class,
                             metrics::recordMiss,
                             metrics::recordHit
@@ -50,14 +50,14 @@ public class BlockCacheStore {
         }
     }
 
-    public void putNearby(int baseX, int baseY, int range, NearbyBlockListResponse response) {
+    public void putArea(int areaX, int areaY, NearbyBlockListResponse response) {
         if (!isEnabled()) {
             return;
         }
 
         try {
             cacheHelper.writeAsync(
-                    blockCacheKeyFactory.buildNearbyListKey(baseX, baseY, range),
+                    blockCacheKeyFactory.buildAreaKey(areaX, areaY),
                     toPayload(response),
                     blockCachePolicy.resolveTtlSeconds(),
                     throwable -> {
