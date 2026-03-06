@@ -142,6 +142,11 @@ cache:
   region:
     key: ${CACHE_REGION_KEY:cache:regions}
     key-version: ${CACHE_REGION_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
+  block:
+    key: ${CACHE_BLOCK_KEY:cache:blocks:list}
+    ttl-seconds: ${CACHE_BLOCK_TTL_SECONDS:10}
+    jitter-percent: ${CACHE_BLOCK_JITTER_PERCENT:${CACHE_DEFAULT_JITTER_PERCENT:20}}
+    key-version: ${CACHE_BLOCK_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
   ranking:
     personal:
       summary-key: ${CACHE_RANKING_PERSONAL_SUMMARY_KEY:cache:rankings:dogs:summary}
