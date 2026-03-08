@@ -7,6 +7,9 @@ import com.daengddang.daengdong_map.repository.RankingRetentionBatchRepository;
 import com.daengddang.daengdong_map.repository.RankingRetentionSummary;
 import com.daengddang.daengdong_map.repository.RankingUpsertBatchRepository;
 import com.daengddang.daengdong_map.repository.RankingUpsertSummary;
+import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
+import com.daengddang.daengdong_map.service.cache.RankingRegionContributionCacheStore;
+import com.daengddang.daengdong_map.service.cache.RankingRegionSummaryCacheStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +26,9 @@ public class RankingBatchService {
     private final RankingUpsertBatchRepository rankingUpsertBatchRepository;
     private final RankingCleanupBatchRepository rankingCleanupBatchRepository;
     private final RankingRetentionBatchRepository rankingRetentionBatchRepository;
+    private final RankingPersonalCacheStore rankingPersonalCacheStore;
+    private final RankingRegionSummaryCacheStore rankingRegionSummaryCacheStore;
+    private final RankingRegionContributionCacheStore rankingRegionContributionCacheStore;
 
     @Value("${ranking.batch.retention.week-keep-count:12}")
     private int weekKeepCount;
@@ -39,6 +45,15 @@ public class RankingBatchService {
         for (RankingPeriodType periodType : RankingPeriodType.values()) {
             runUpsertByPeriodType(periodType);
         }
+        long personalDeleted = rankingPersonalCacheStore.evictAll();
+        long regionDeleted = rankingRegionSummaryCacheStore.evictAll();
+        long contributionDeleted = rankingRegionContributionCacheStore.evictAll();
+        log.info(
+                "랭킹 캐시 무효화 완료 - 배치 업서트 이후 (Ranking caches evicted after ranking upsert batch): personalDeleted={}, regionDeleted={}, contributionDeleted={}",
+                personalDeleted,
+                regionDeleted,
+                contributionDeleted
+        );
 
         log.info("Ranking upsert batch finished");
     }

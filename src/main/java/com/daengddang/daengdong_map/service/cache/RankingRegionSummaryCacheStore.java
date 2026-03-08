@@ -6,6 +6,7 @@ import com.daengddang.daengdong_map.dto.response.ranking.region.RegionRankingSum
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -25,6 +27,7 @@ public class RankingRegionSummaryCacheStore {
     private static final String NULL_REGION = "all";
     private static final String NULL_USER = "anon";
 
+    private final RedissonClient redissonClient;
     private final RedisJsonBucketCacheHelper cacheHelper;
     private final CacheDefaultProperties defaultProperties;
     private final RankingRegionSummaryCacheProperties properties;
@@ -145,6 +148,27 @@ public class RankingRegionSummaryCacheStore {
                 + ":" + safe(periodValue)
                 + ":limit:" + limit
                 + ":cursor:" + sha256Hex(rawCursor);
+    }
+
+    public long evictAll() {
+        if (!isEnabled()) {
+            return 0L;
+        }
+
+        try {
+            String summaryPattern = resolvePrefix(properties.getSummaryKey()) + ":*";
+            String listPattern = resolvePrefix(properties.getListKey()) + ":*";
+            List<String> keys = new ArrayList<>();
+            redissonClient.getKeys().getKeysByPattern(summaryPattern).forEach(keys::add);
+            redissonClient.getKeys().getKeysByPattern(listPattern).forEach(keys::add);
+            if (keys.isEmpty()) {
+                return 0L;
+            }
+            return redissonClient.getKeys().delete(keys.toArray(String[]::new));
+        } catch (Exception e) {
+            log.warn("지역 랭킹 캐시 무효화 실패 (Region ranking cache eviction failed)", e);
+            return 0L;
+        }
     }
 
     private long resolveTtlSeconds() {
