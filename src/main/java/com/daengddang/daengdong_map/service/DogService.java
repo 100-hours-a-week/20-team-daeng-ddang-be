@@ -11,11 +11,16 @@ import com.daengddang.daengdong_map.dto.response.dog.DogRegisterResponse;
 import com.daengddang.daengdong_map.dto.response.dog.DogResponse;
 import com.daengddang.daengdong_map.repository.BreedRepository;
 import com.daengddang.daengdong_map.repository.DogRepository;
+import com.daengddang.daengdong_map.service.cache.RankingRegionContributionCacheStore;
+import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
+import com.daengddang.daengdong_map.service.cache.RankingRegionSummaryCacheStore;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DogService {
@@ -23,6 +28,9 @@ public class DogService {
     private final DogRepository dogRepository;
     private final BreedRepository breedRepository;
     private final AccessValidator accessValidator;
+    private final RankingPersonalCacheStore rankingPersonalCacheStore;
+    private final RankingRegionSummaryCacheStore rankingRegionSummaryCacheStore;
+    private final RankingRegionContributionCacheStore rankingRegionContributionCacheStore;
 
     @Transactional
     public DogRegisterResponse registerDog(Long userId, DogRegisterRequest dto) {
@@ -64,6 +72,15 @@ public class DogService {
                 .orElseThrow(() -> new BaseException(ErrorCode.DOG_BREED_NOT_FOUND));
 
         DogUpdateRequest.of(dto, dog, breed);
+        long personalDeleted = rankingPersonalCacheStore.evictAll();
+        long regionDeleted = rankingRegionSummaryCacheStore.evictAll();
+        long contributionDeleted = rankingRegionContributionCacheStore.evictAll();
+        log.info(
+                "랭킹 캐시 무효화 완료 - 반려견 정보 수정 (Ranking caches evicted on dog profile update): personalDeleted={}, regionDeleted={}, contributionDeleted={}",
+                personalDeleted,
+                regionDeleted,
+                contributionDeleted
+        );
 
         return DogResponse.from(dog);
     }
