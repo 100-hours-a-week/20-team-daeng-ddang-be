@@ -4,14 +4,17 @@ import com.daengddang.daengdong_map.util.*;
 import com.daengddang.daengdong_map.dto.websocket.common.WebSocketErrorReason;
 import com.daengddang.daengdong_map.dto.websocket.inbound.LocationUpdatePayload;
 import com.daengddang.daengdong_map.domain.walk.Walk;
+import com.daengddang.daengdong_map.service.cache.BlockCacheStore;
 
 import java.time.LocalDateTime;
 import java.security.Principal;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalkWebSocketService {
@@ -22,6 +25,7 @@ public class WalkWebSocketService {
     private final WalkPointWriter walkPointWriter;
     private final StayValidator stayValidator;
     private final BlockSyncService blockSyncService;
+    private final BlockCacheStore blockCacheStore;
 
     @Transactional
     public void handleLocationUpdate(Long walkId, LocationUpdatePayload payload, Principal principal) {
@@ -54,10 +58,12 @@ public class WalkWebSocketService {
         BlockOccupancyResult result = blockOccupancyService.occupy(walk, blockX, blockY, timestamp);
         switch (result.type()) {
             case OCCUPIED -> {
+                evictBlockCache(blockX, blockY);
                 walkEventPublisher.sendBlockOccupied(walkId, blockId, walk.getDog(), timestamp, areaKey);
                 walkEventPublisher.syncBlocks(walkId, blockX, blockY, areaKey, timestamp);
             }
             case TAKEN -> {
+                evictBlockCache(blockX, blockY);
                 walkEventPublisher.sendBlockTaken(
                         walkId,
                         blockId,
@@ -72,4 +78,15 @@ public class WalkWebSocketService {
         }
     }
 
+    private void evictBlockCache(int blockX, int blockY) {
+        long deleted = blockCacheStore.evictByChangedBlock(blockX, blockY);
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "블록 점유 변경으로 캐시 무효화 완료 (Block cache invalidated on ownership change): blockX={}, blockY={}, deletedKeys={}",
+                    blockX,
+                    blockY,
+                    deleted
+            );
+        }
+    }
 }

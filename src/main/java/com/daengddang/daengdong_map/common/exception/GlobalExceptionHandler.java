@@ -5,17 +5,31 @@ import com.daengddang.daengdong_map.common.ErrorCode;
 import org.hibernate.exception.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.validation.FieldError;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AnalysisBackpressureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAnalysisBackpressureException(AnalysisBackpressureException e) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()));
+        log.info("분석 백프레셔로 요청을 거절했습니다. activeTasks={}, maxActiveTasks={}, retryAfterSeconds={}",
+                e.getActiveTasks(), e.getMaxActiveTasks(), e.getRetryAfterSeconds());
+        return ResponseEntity
+                .status(ErrorCode.TOO_MANY_REQUESTS.getHttpStatus())
+                .headers(headers)
+                .body(ApiResponse.error(ErrorCode.TOO_MANY_REQUESTS));
+    }
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException e) {
@@ -46,6 +60,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
                 .body(ApiResponse.error(errorCode));
+    }
+
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException e) {
+        log.debug("SSE 연결이 이미 종료된 상태에서 비동기 응답이 발생했습니다. message={}", e.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

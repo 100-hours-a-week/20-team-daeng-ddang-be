@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Tag(name = "Analysis Task", description = "Async analysis task endpoints")
 public interface AnalysisTaskApi {
@@ -101,6 +102,39 @@ public interface AnalysisTaskApi {
             com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
     })
     ApiResponse<AnalysisTaskDetailResponse> getHealthcareTask(
+            @Parameter(hidden = true) AuthUser authUser,
+            @PathVariable String taskId
+    );
+
+    @Operation(summary = "Subscribe analysis task events (walk)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND")
+    })
+    @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
+            com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
+    })
+    SseEmitter subscribeTaskEvents(
+            @Parameter(hidden = true) AuthUser authUser,
+            @PathVariable Long walkId,
+            @PathVariable String taskId
+    );
+
+    @Operation(summary = "Subscribe analysis task events (healthcare)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OK"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "UNAUTHORIZED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "FORBIDDEN"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "RESOURCE_NOT_FOUND")
+    })
+    @ErrorCodes({
+            com.daengddang.daengdong_map.common.ErrorCode.FORBIDDEN,
+            com.daengddang.daengdong_map.common.ErrorCode.RESOURCE_NOT_FOUND
+    })
+    SseEmitter subscribeHealthcareTaskEvents(
             @Parameter(hidden = true) AuthUser authUser,
             @PathVariable String taskId
     );

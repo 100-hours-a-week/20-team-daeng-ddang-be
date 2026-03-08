@@ -1,10 +1,12 @@
 package com.daengddang.daengdong_map.service;
 
 import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTaskStatus;
+import com.daengddang.daengdong_map.event.AnalysisTaskStatusChangedEvent;
 import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ public class ExternalAnalysisTaskStateService {
     private static final int ERROR_MESSAGE_MAX_LENGTH = 1000;
 
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean markRunningIfPending(String taskId) {
@@ -25,12 +28,16 @@ public class ExternalAnalysisTaskStateService {
                 ExternalAnalysisTaskStatus.RUNNING,
                 LocalDateTime.now()
         );
-        return updated > 0;
+        boolean changed = updated > 0;
+        if (changed) {
+            eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        }
+        return changed;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markSuccessIfRunning(String taskId, String resultType, String resultId) {
-        externalAnalysisTaskRepository.markSuccessIfRunning(
+        int updated = externalAnalysisTaskRepository.markSuccessIfRunning(
                 taskId,
                 ExternalAnalysisTaskStatus.RUNNING,
                 ExternalAnalysisTaskStatus.SUCCESS,
@@ -38,11 +45,14 @@ public class ExternalAnalysisTaskStateService {
                 resultType,
                 resultId
         );
+        if (updated > 0) {
+            eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markFail(String taskId, String errorCode, String errorMessage) {
-        externalAnalysisTaskRepository.markFail(
+        int updated = externalAnalysisTaskRepository.markFail(
                 taskId,
                 List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING),
                 ExternalAnalysisTaskStatus.FAIL,
@@ -50,6 +60,9 @@ public class ExternalAnalysisTaskStateService {
                 errorCode,
                 sanitizeErrorMessage(errorMessage)
         );
+        if (updated > 0) {
+            eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        }
     }
 
     private String sanitizeErrorMessage(String errorMessage) {

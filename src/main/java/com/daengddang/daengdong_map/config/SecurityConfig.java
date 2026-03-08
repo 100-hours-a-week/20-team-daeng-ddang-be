@@ -6,6 +6,7 @@ import com.daengddang.daengdong_map.security.jwt.JwtAccessDeniedHandler;
 import com.daengddang.daengdong_map.security.jwt.JwtAuthenticationEntryPoint;
 import com.daengddang.daengdong_map.security.jwt.JwtAuthenticationFilter;
 import com.daengddang.daengdong_map.security.jwt.JwtTokenProvider;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +48,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(new JwtAccessDeniedHandler())
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(
                                 "/",
                                 "/api/v3/health",

@@ -5,6 +5,7 @@ import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.repository.projection.BlockOwnershipView;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -31,6 +32,14 @@ public interface BlockOwnershipRepository extends JpaRepository<BlockOwnership, 
     List<BlockOwnershipView> findAllByDogWithBlockAndDog(@Param("dog") Dog dog);
 
     List<BlockOwnership> findAllByIdIn(Collection<Long> blockIds);
+
+    @Query("""
+            select dog.id
+            from BlockOwnership ownership
+            join ownership.dog dog
+            where ownership.id = :blockId
+            """)
+    Optional<Long> findOwnerDogIdByBlockId(@Param("blockId") Long blockId);
 
     @Query("""
             SELECT
@@ -62,6 +71,35 @@ public interface BlockOwnershipRepository extends JpaRepository<BlockOwnership, 
             WHERE block_id = :blockId
             """, nativeQuery = true)
     void restoreOwner(
+            @Param("blockId") Long blockId,
+            @Param("dogId") Long dogId,
+            @Param("updatedAt") java.time.LocalDateTime updatedAt
+    );
+
+    @Modifying
+    @Query(value = """
+            UPDATE block_ownership
+            SET last_passed_at = :updatedAt,
+                updated_at = :updatedAt
+            WHERE block_id = :blockId
+              AND dog_id = :dogId
+            """, nativeQuery = true)
+    int touchLastPassedAt(
+            @Param("blockId") Long blockId,
+            @Param("dogId") Long dogId,
+            @Param("updatedAt") java.time.LocalDateTime updatedAt
+    );
+
+    @Modifying
+    @Query(value = """
+            UPDATE block_ownership
+            SET dog_id = :dogId,
+                acquired_at = :updatedAt,
+                last_passed_at = :updatedAt,
+                updated_at = :updatedAt
+            WHERE block_id = :blockId
+            """, nativeQuery = true)
+    int updateOwnerByBlockId(
             @Param("blockId") Long blockId,
             @Param("dogId") Long dogId,
             @Param("updatedAt") java.time.LocalDateTime updatedAt

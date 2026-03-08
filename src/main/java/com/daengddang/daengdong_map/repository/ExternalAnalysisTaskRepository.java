@@ -47,6 +47,8 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
             Pageable pageable
     );
 
+    long countByStatusIn(List<ExternalAnalysisTaskStatus> statuses);
+
     default Optional<ExternalAnalysisTask> findLatestByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
         return findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
     }
@@ -70,6 +72,38 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
     default List<ExternalAnalysisTask> findPendingBatch(int batchSize) {
         return findByStatusOrderByRequestedAtAsc(
                 ExternalAnalysisTaskStatus.PENDING,
+                PageRequest.of(0, batchSize)
+        );
+    }
+
+    default long countActiveTasks() {
+        return countByStatusIn(List.of(ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING));
+    }
+
+    List<ExternalAnalysisTask> findByStatusAndRequestedAtBeforeOrderByRequestedAtAsc(
+            ExternalAnalysisTaskStatus status,
+            LocalDateTime requestedAt,
+            Pageable pageable
+    );
+
+    List<ExternalAnalysisTask> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+            ExternalAnalysisTaskStatus status,
+            LocalDateTime startedAt,
+            Pageable pageable
+    );
+
+    default List<ExternalAnalysisTask> findStalePendingBatch(LocalDateTime cutoff, int batchSize) {
+        return findByStatusAndRequestedAtBeforeOrderByRequestedAtAsc(
+                ExternalAnalysisTaskStatus.PENDING,
+                cutoff,
+                PageRequest.of(0, batchSize)
+        );
+    }
+
+    default List<ExternalAnalysisTask> findStaleRunningBatch(LocalDateTime cutoff, int batchSize) {
+        return findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+                ExternalAnalysisTaskStatus.RUNNING,
+                cutoff,
                 PageRequest.of(0, batchSize)
         );
     }

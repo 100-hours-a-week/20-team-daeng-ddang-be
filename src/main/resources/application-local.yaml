@@ -26,4 +26,7 @@ ratelimit:
   enabled: false
 ranking:
   batch:
-    cron: "0 * * * * *"
+    enabled: true
+    cron: "0 0 0 * * *"
+    cleanup-cron: "0 0 0 * * *"
+    retention-cron: "0 0 0 * * *"
