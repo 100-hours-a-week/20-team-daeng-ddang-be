@@ -196,11 +196,11 @@ public class PersonalRankingService {
             Integer revRank = revRankFuture == null ? null : revRankFuture.getNow();
             Double myScoreFromBatch = scoreFuture == null ? null : scoreFuture.getNow();
 
+            List<Long> parsedTopDogIds = parseDogIds(topEntries, topEntries.size());
             LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
-            for (ScoredEntry<String> entry : topEntries) {
-                Long parsed = toLongOrNull(entry.getValue());
-                if (parsed != null) {
-                    dogIds.add(parsed);
+            for (Long dogId : parsedTopDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
                 }
             }
             if (myDogId != null) {
@@ -208,7 +208,8 @@ public class PersonalRankingService {
             }
 
             Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
-            List<PersonalRankItemResponse> topRanks = buildRankItemsFromEntries(topEntries, dogById, 1, topEntries.size());
+            List<PersonalRankItemResponse> topRanks =
+                    buildRankItemsFromEntries(topEntries, parsedTopDogIds, dogById, 1, topEntries.size());
 
             PersonalRankItemResponse myRank = null;
             if (myDogId != null && revRank != null) {
@@ -362,14 +363,15 @@ public class PersonalRankingService {
             int realSize = Math.min(entries.size(), limit);
 
             LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
-            for (int i = 0; i < realSize; i++) {
-                Long parsed = toLongOrNull(entries.get(i).getValue());
-                if (parsed != null) {
-                    dogIds.add(parsed);
+            List<Long> parsedDogIds = parseDogIds(entries, realSize);
+            for (Long dogId : parsedDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
                 }
             }
             Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
-            List<PersonalRankItemResponse> ranks = buildRankItemsFromEntries(entries, dogById, startIndex + 1, realSize);
+            List<PersonalRankItemResponse> ranks =
+                    buildRankItemsFromEntries(entries, parsedDogIds, dogById, startIndex + 1, realSize);
 
             String nextCursor = null;
             if (hasNext && !ranks.isEmpty()) {
@@ -400,14 +402,24 @@ public class PersonalRankingService {
                 && "zset".equalsIgnoreCase(rankingZsetProperties.getReadSource());
     }
 
+    private List<Long> parseDogIds(List<ScoredEntry<String>> entries, int sizeLimit) {
+        int realSize = Math.min(entries.size(), sizeLimit);
+        List<Long> dogIds = new ArrayList<>(realSize);
+        for (int i = 0; i < realSize; i++) {
+            dogIds.add(toLongOrNull(entries.get(i).getValue()));
+        }
+        return dogIds;
+    }
+
     private List<PersonalRankItemResponse> buildRankItemsFromEntries(List<ScoredEntry<String>> entries,
+                                                                     List<Long> parsedDogIds,
                                                                      Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
                                                                      int baseRank,
                                                                      int sizeLimit) {
         int realSize = Math.min(entries.size(), sizeLimit);
         List<PersonalRankItemResponse> items = new ArrayList<>(realSize);
         for (int i = 0; i < realSize; i++) {
-            PersonalRankItemResponse item = toRankItem(entries.get(i), dogById, baseRank + i);
+            PersonalRankItemResponse item = toRankItem(entries.get(i), parsedDogIds.get(i), dogById, baseRank + i);
             if (item != null) {
                 items.add(item);
             }
@@ -416,9 +428,9 @@ public class PersonalRankingService {
     }
 
     private PersonalRankItemResponse toRankItem(ScoredEntry<String> entry,
+                                                Long dogId,
                                                 Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
                                                 int rank) {
-        Long dogId = toLongOrNull(entry.getValue());
         if (dogId == null) {
             return null;
         }
