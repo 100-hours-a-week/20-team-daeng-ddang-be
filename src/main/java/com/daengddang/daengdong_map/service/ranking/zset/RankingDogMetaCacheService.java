@@ -3,13 +3,11 @@ package com.daengddang.daengdong_map.service.ranking.zset;
 import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.repository.DogRepository;
 import java.time.LocalDate;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -18,14 +16,21 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RankingDogMetaCacheService {
 
-    private static final String META_FIELD_SEP = ".";
+    private static final char META_FIELD_SEP = '|';
 
     private final RankingZsetKeyFactory keyFactory;
-    private final RedissonClient redissonClient;
     private final DogRepository dogRepository;
+    private final RMap<String, String> packedMap;
+
+    public RankingDogMetaCacheService(RankingZsetKeyFactory keyFactory,
+                                      RedissonClient redissonClient,
+                                      DogRepository dogRepository) {
+        this.keyFactory = keyFactory;
+        this.dogRepository = dogRepository;
+        this.packedMap = redissonClient.getMap(keyFactory.dogMetaPackedMapKey(), StringCodec.INSTANCE);
+    }
 
     public Map<Long, DogMeta> getByDogIds(Collection<Long> dogIds) {
         if (dogIds == null || dogIds.isEmpty()) {
@@ -33,9 +38,11 @@ public class RankingDogMetaCacheService {
         }
 
         Set<Long> uniqueDogIds = new LinkedHashSet<>(dogIds);
-        Set<String> dogIdKeys = uniqueDogIds.stream().map(String::valueOf).collect(java.util.stream.Collectors.toSet());
+        Set<String> dogIdKeys = new LinkedHashSet<>(uniqueDogIds.size());
+        for (Long id : uniqueDogIds) {
+            dogIdKeys.add(String.valueOf(id));
+        }
 
-        RMap<String, String> packedMap = redissonClient.getMap(keyFactory.dogMetaPackedMapKey(), StringCodec.INSTANCE);
         Map<String, String> packedValues = packedMap.getAll(dogIdKeys);
 
         Map<Long, DogMeta> result = new LinkedHashMap<>(uniqueDogIds.size());
@@ -55,7 +62,7 @@ public class RankingDogMetaCacheService {
         }
 
         try {
-            Map<String, String> updatePacked = new LinkedHashMap<>();
+            Map<String, String> updatePacked = new LinkedHashMap<>(misses.size());
 
             for (Dog dog : dogRepository.findAllWithBreedByIdIn(misses)) {
                 String key = String.valueOf(dog.getId());
@@ -99,8 +106,7 @@ public class RankingDogMetaCacheService {
                     valueOrEmpty(dog.getProfileImageUrl()),
                     dog.getBreed() == null ? "" : valueOrEmpty(dog.getBreed().getName())
             );
-            redissonClient.getMap(keyFactory.dogMetaPackedMapKey(), StringCodec.INSTANCE)
-                    .put(key, packed);
+            packedMap.put(key, packed);
         } catch (Exception e) {
             log.warn("랭킹 dog 메타 캐시 갱신 실패 (Ranking dog meta cache upsert failed): dogId={}", dog.getId(), e);
         }
@@ -110,39 +116,41 @@ public class RankingDogMetaCacheService {
         if (packed == null || packed.isBlank()) {
             return null;
         }
-        String[] parts = packed.split("\\.", -1);
-        if (parts.length != 4) {
+
+        int firstSep = packed.indexOf(META_FIELD_SEP);
+        if (firstSep < 0) {
             return null;
         }
-        String name = nullIfBlank(fromBase64(parts[0]));
+        int secondSep = packed.indexOf(META_FIELD_SEP, firstSep + 1);
+        if (secondSep < 0) {
+            return null;
+        }
+        int thirdSep = packed.indexOf(META_FIELD_SEP, secondSep + 1);
+        if (thirdSep < 0) {
+            return null;
+        }
+        if (packed.indexOf(META_FIELD_SEP, thirdSep + 1) >= 0) {
+            return null;
+        }
+
+        String name = nullIfBlank(packed.substring(0, firstSep));
+        String birthDate = nullIfBlank(packed.substring(firstSep + 1, secondSep));
+        String profileImageUrl = nullIfBlank(packed.substring(secondSep + 1, thirdSep));
+        String breed = nullIfBlank(packed.substring(thirdSep + 1));
+
         return new DogMeta(
                 name,
-                parseDate(nullIfBlank(fromBase64(parts[1]))),
-                nullIfBlank(fromBase64(parts[2])),
-                nullIfBlank(fromBase64(parts[3]))
+                parseDate(birthDate),
+                profileImageUrl,
+                breed
         );
     }
 
     private String pack(String name, String birthDate, String profileImageUrl, String breed) {
-        return toBase64(name) + META_FIELD_SEP
-                + toBase64(birthDate) + META_FIELD_SEP
-                + toBase64(profileImageUrl) + META_FIELD_SEP
-                + toBase64(breed);
-    }
-
-    private String toBase64(String value) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(valueOrEmpty(value).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    }
-
-    private String fromBase64(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-        try {
-            return new String(Base64.getUrlDecoder().decode(value), java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return "";
-        }
+        return valueOrEmpty(name) + META_FIELD_SEP
+                + valueOrEmpty(birthDate) + META_FIELD_SEP
+                + valueOrEmpty(profileImageUrl) + META_FIELD_SEP
+                + valueOrEmpty(breed);
     }
 
     private String nullIfBlank(String value) {
