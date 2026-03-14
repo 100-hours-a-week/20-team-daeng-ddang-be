@@ -78,6 +78,12 @@ ai:
     expression-analyze-uri: ${FASTAPI_FACE_ANALYZE_URI}
     healthcare-analyze-uri: ${FASTAPI_HEALTHCARE_ANALYZE_URI}
     healthcare-chat-uri: ${FASTAPI_HEALTHCARE_CHAT_URI}
+    connect-timeout: ${FASTAPI_CONNECT_TIMEOUT:2s}
+    read-timeout: ${FASTAPI_READ_TIMEOUT:80s}
+    mission-hard-timeout: ${FASTAPI_MISSION_HARD_TIMEOUT:80s}
+    expression-hard-timeout: ${FASTAPI_EXPRESSION_HARD_TIMEOUT:15s}
+    healthcare-hard-timeout: ${FASTAPI_HEALTHCARE_HARD_TIMEOUT:20s}
+    chat-hard-timeout: ${FASTAPI_CHAT_HARD_TIMEOUT:10s}
 
 ranking:
   batch:
