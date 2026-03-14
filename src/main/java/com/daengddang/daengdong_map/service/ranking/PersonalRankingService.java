@@ -21,6 +21,7 @@ import com.daengddang.daengdong_map.util.RankingRequestValidator;
 import com.daengddang.daengdong_map.util.RegionValidator;
 import com.daengddang.daengdong_map.util.RankingValidator;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RBatch;
+import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.codec.StringCodec;
@@ -172,15 +176,31 @@ public class PersonalRankingService {
             String key = regionId == null
                     ? rankingZsetKeyFactory.dogGlobalKey(periodType, periodValue)
                     : rankingZsetKeyFactory.dogRegionKey(regionId, periodType, periodValue);
-            RScoredSortedSet<String> zset = redissonClient.getScoredSortedSet(key, StringCodec.INSTANCE);
+            RBatch batch = redissonClient.createBatch();
+            RScoredSortedSetAsync<String> zsetAsync = batch.getScoredSortedSet(key, StringCodec.INSTANCE);
+            RFuture<Collection<ScoredEntry<String>>> topEntriesFuture =
+                    zsetAsync.entryRangeReversedAsync(0, SUMMARY_TOP_LIMIT - 1);
+            RFuture<Integer> revRankFuture = null;
+            RFuture<Double> scoreFuture = null;
+            if (myDogId != null) {
+                String myDogIdString = String.valueOf(myDogId);
+                revRankFuture = zsetAsync.revRankAsync(myDogIdString);
+                scoreFuture = zsetAsync.getScoreAsync(myDogIdString);
+            }
+            batch.execute();
 
-            List<ScoredEntry<String>> topEntries = new ArrayList<>(zset.entryRangeReversed(0, SUMMARY_TOP_LIMIT - 1));
+            Collection<ScoredEntry<String>> fetchedTopEntries = topEntriesFuture.getNow();
+            List<ScoredEntry<String>> topEntries = fetchedTopEntries == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(fetchedTopEntries);
+            Integer revRank = revRankFuture == null ? null : revRankFuture.getNow();
+            Double myScoreFromBatch = scoreFuture == null ? null : scoreFuture.getNow();
 
+            List<Long> parsedTopDogIds = parseDogIds(topEntries, topEntries.size());
             LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
-            for (ScoredEntry<String> entry : topEntries) {
-                Long parsed = toLongOrNull(entry.getValue());
-                if (parsed != null) {
-                    dogIds.add(parsed);
+            for (Long dogId : parsedTopDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
                 }
             }
             if (myDogId != null) {
@@ -188,55 +208,26 @@ public class PersonalRankingService {
             }
 
             Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
-
-            List<PersonalRankItemResponse> topRanks = new ArrayList<>();
-            for (int i = 0; i < topEntries.size(); i++) {
-                ScoredEntry<String> entry = topEntries.get(i);
-                Long dogId = toLongOrNull(entry.getValue());
-                if (dogId == null) {
-                    continue;
-                }
-                RankingDogMetaCacheService.DogMeta dog = dogById.get(dogId);
-                if (dog == null) {
-                    continue;
-                }
-                topRanks.add(PersonalRankItemResponse.of(
-                        i + 1,
-                        dogId,
-                        dog.name(),
-                        dog.birthDate(),
-                        dog.profileImageUrl(),
-                        dog.breed(),
-                        entry.getScore() == null ? 0.0 : entry.getScore()
-                ));
-            }
+            List<PersonalRankItemResponse> topRanks =
+                    buildRankItemsFromEntries(topEntries, parsedTopDogIds, dogById, 1, topEntries.size());
 
             PersonalRankItemResponse myRank = null;
-            if (myDogId != null) {
-                Integer revRank = zset.revRank(String.valueOf(myDogId));
-                if (revRank != null) {
-                    RankingDogMetaCacheService.DogMeta dog = dogById.get(myDogId);
-                    if (dog != null) {
-                        Double score = null;
-                        for (ScoredEntry<String> entry : topEntries) {
-                            if (String.valueOf(myDogId).equals(entry.getValue())) {
-                                score = entry.getScore();
-                                break;
-                            }
-                        }
-                        if (score == null) {
-                            score = zset.getScore(String.valueOf(myDogId));
-                        }
-                        myRank = PersonalRankItemResponse.of(
-                                revRank + 1,
-                                myDogId,
-                                dog.name(),
-                                dog.birthDate(),
-                                dog.profileImageUrl(),
-                                dog.breed(),
-                                score == null ? 0.0 : score
-                        );
+            if (myDogId != null && revRank != null) {
+                RankingDogMetaCacheService.DogMeta dog = dogById.get(myDogId);
+                if (dog != null) {
+                    Double score = findScoreInEntries(topEntries, myDogId);
+                    if (score == null) {
+                        score = myScoreFromBatch;
                     }
+                    myRank = PersonalRankItemResponse.of(
+                            revRank + 1,
+                            myDogId,
+                            dog.name(),
+                            dog.birthDate(),
+                            dog.profileImageUrl(),
+                            dog.breed(),
+                            score == null ? 0.0 : score
+                    );
                 }
             }
 
@@ -372,35 +363,15 @@ public class PersonalRankingService {
             int realSize = Math.min(entries.size(), limit);
 
             LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
-            for (int i = 0; i < realSize; i++) {
-                Long parsed = toLongOrNull(entries.get(i).getValue());
-                if (parsed != null) {
-                    dogIds.add(parsed);
+            List<Long> parsedDogIds = parseDogIds(entries, realSize);
+            for (Long dogId : parsedDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
                 }
             }
             Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
-
-            List<PersonalRankItemResponse> ranks = new ArrayList<>(realSize);
-            for (int i = 0; i < realSize; i++) {
-                ScoredEntry<String> entry = entries.get(i);
-                Long dogId = toLongOrNull(entry.getValue());
-                if (dogId == null) {
-                    continue;
-                }
-                RankingDogMetaCacheService.DogMeta dog = dogById.get(dogId);
-                if (dog == null) {
-                    continue;
-                }
-                ranks.add(PersonalRankItemResponse.of(
-                        startIndex + i + 1,
-                        dogId,
-                        dog.name(),
-                        dog.birthDate(),
-                        dog.profileImageUrl(),
-                        dog.breed(),
-                        entry.getScore() == null ? 0.0 : entry.getScore()
-                ));
-            }
+            List<PersonalRankItemResponse> ranks =
+                    buildRankItemsFromEntries(entries, parsedDogIds, dogById, startIndex + 1, realSize);
 
             String nextCursor = null;
             if (hasNext && !ranks.isEmpty()) {
@@ -429,6 +400,63 @@ public class PersonalRankingService {
         return rankingZsetProperties.isEnabled()
                 && periodType == RankingPeriodType.WEEK
                 && "zset".equalsIgnoreCase(rankingZsetProperties.getReadSource());
+    }
+
+    private List<Long> parseDogIds(List<ScoredEntry<String>> entries, int sizeLimit) {
+        int realSize = Math.min(entries.size(), sizeLimit);
+        List<Long> dogIds = new ArrayList<>(realSize);
+        for (int i = 0; i < realSize; i++) {
+            dogIds.add(toLongOrNull(entries.get(i).getValue()));
+        }
+        return dogIds;
+    }
+
+    private List<PersonalRankItemResponse> buildRankItemsFromEntries(List<ScoredEntry<String>> entries,
+                                                                     List<Long> parsedDogIds,
+                                                                     Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
+                                                                     int baseRank,
+                                                                     int sizeLimit) {
+        int realSize = Math.min(entries.size(), sizeLimit);
+        List<PersonalRankItemResponse> items = new ArrayList<>(realSize);
+        for (int i = 0; i < realSize; i++) {
+            PersonalRankItemResponse item = toRankItem(entries.get(i), parsedDogIds.get(i), dogById, baseRank + i);
+            if (item != null) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    private PersonalRankItemResponse toRankItem(ScoredEntry<String> entry,
+                                                Long dogId,
+                                                Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
+                                                int rank) {
+        if (dogId == null) {
+            return null;
+        }
+        RankingDogMetaCacheService.DogMeta dog = dogById.get(dogId);
+        if (dog == null) {
+            return null;
+        }
+        return PersonalRankItemResponse.of(
+                rank,
+                dogId,
+                dog.name(),
+                dog.birthDate(),
+                dog.profileImageUrl(),
+                dog.breed(),
+                entry.getScore() == null ? 0.0 : entry.getScore()
+        );
+    }
+
+    private Double findScoreInEntries(List<ScoredEntry<String>> entries, Long dogId) {
+        String dogIdString = String.valueOf(dogId);
+        for (ScoredEntry<String> entry : entries) {
+            if (dogIdString.equals(entry.getValue())) {
+                return entry.getScore();
+            }
+        }
+        return null;
     }
 
     private Long toLongOrNull(String value) {

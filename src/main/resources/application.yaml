@@ -92,7 +92,7 @@ ranking:
     zone: Asia/Seoul
   zset:
     enabled: true
-    read-source: zset
+    read-source: db
 
 analysis:
   backpressure:
