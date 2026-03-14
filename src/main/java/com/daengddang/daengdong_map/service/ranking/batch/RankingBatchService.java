@@ -10,6 +10,7 @@ import com.daengddang.daengdong_map.repository.RankingUpsertSummary;
 import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
 import com.daengddang.daengdong_map.service.cache.RankingRegionContributionCacheStore;
 import com.daengddang.daengdong_map.service.cache.RankingRegionSummaryCacheStore;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetWeekRebuildService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ public class RankingBatchService {
     private final RankingPersonalCacheStore rankingPersonalCacheStore;
     private final RankingRegionSummaryCacheStore rankingRegionSummaryCacheStore;
     private final RankingRegionContributionCacheStore rankingRegionContributionCacheStore;
+    private final RankingZsetWeekRebuildService rankingZsetWeekRebuildService;
 
     @Value("${ranking.batch.retention.week-keep-count:12}")
     private int weekKeepCount;
@@ -54,6 +56,7 @@ public class RankingBatchService {
                 regionDeleted,
                 contributionDeleted
         );
+        rankingZsetWeekRebuildService.rebuildCurrentWeek();
 
         log.info("Ranking upsert batch finished");
     }
