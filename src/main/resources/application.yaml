@@ -90,6 +90,9 @@ ranking:
       month-keep-count: 12
       year-keep-count: 3
     zone: Asia/Seoul
+  zset:
+    enabled: true
+    read-source: zset
 
 analysis:
   backpressure:

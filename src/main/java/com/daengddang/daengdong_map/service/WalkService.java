@@ -21,6 +21,7 @@ import com.daengddang.daengdong_map.util.WalkRuntimeStateRegistry;
 import com.daengddang.daengdong_map.util.WalkMetricsValidator;
 import com.daengddang.daengdong_map.repository.WalkPointRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetRealtimeUpdater;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class WalkService {
     private final WalkBlockLogRepository walkBlockLogRepository;
     private final AccessValidator accessValidator;
     private final WalkRuntimeStateRegistry stateRegistry;
+    private final RankingZsetRealtimeUpdater rankingZsetRealtimeUpdater;
 
     @Transactional
     public WalkStartResponse startWalk(Long userId, WalkStartRequest dto) {
@@ -103,6 +105,8 @@ public class WalkService {
         if (Boolean.TRUE.equals(dto.getIsValidated())) {
             removeBlocksAcquiredInWalk(walk.getId());
         }
+
+        rankingZsetRealtimeUpdater.addDistanceForFinishedWalk(dog, storedDistanceMeters);
 
         stateRegistry.clear(walk.getId());
 
