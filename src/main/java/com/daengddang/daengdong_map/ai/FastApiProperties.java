@@ -28,4 +28,8 @@ public class FastApiProperties {
     private int executorCorePoolSize = 16;
     private int executorMaxPoolSize = 32;
     private int executorQueueCapacity = 64;
+    private float circuitBreakerFailureRateThreshold = 50.0f;
+    private int circuitBreakerMinimumNumberOfCalls = 10;
+    private Duration circuitBreakerWaitDurationInOpenState = Duration.ofSeconds(15);
+    private int circuitBreakerPermittedNumberOfCallsInHalfOpenState = 3;
 }
