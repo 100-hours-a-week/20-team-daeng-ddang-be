@@ -99,6 +99,8 @@ public enum ErrorCode {
             "AI 서버 응답 형식이 올바르지 않습니다."),
     AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT,
             "AI 서버 응답 시간이 초과되었습니다."),
+    AI_SERVER_BULKHEAD_REJECTED(HttpStatus.TOO_MANY_REQUESTS,
+            "AI 요청 처리 용량이 초과되었습니다. 잠시 후 다시 시도해주세요."),
     AI_SERVER_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY,
             "AI 서버와 연결에 실패했습니다."),
 

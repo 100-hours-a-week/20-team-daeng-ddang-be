@@ -25,11 +25,7 @@ import org.springframework.web.client.RestClientException;
 import java.net.ConnectException;
 import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpTimeoutException;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 @Component
 @RequiredArgsConstructor
@@ -46,11 +42,11 @@ public class FastApiClient {
     private final TimeLimiter healthcareFastApiTimeLimiter;
     @Qualifier("chatFastApiTimeLimiter")
     private final TimeLimiter chatFastApiTimeLimiter;
-    private final ExecutorService fastApiExecutorService;
+    private final FastApiCallExecutor fastApiCallExecutor;
 
     public FastApiMissionJudgeResponse requestMissionJudge(FastApiMissionJudgeRequest request) {
         try {
-            return executeWithHardTimeout(missionFastApiTimeLimiter, () -> restClient.post()
+            return fastApiCallExecutor.execute(missionFastApiTimeLimiter, () -> restClient.post()
                     .uri(fastApiProperties.getMissionJudgeUri())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
@@ -63,7 +59,7 @@ public class FastApiClient {
 
     public FastApiExpressionAnalyzeResponse requestExpressionAnalyze(FastApiExpressionAnalyzeRequest request) {
         try {
-            return executeWithHardTimeout(expressionFastApiTimeLimiter, () -> restClient.post()
+            return fastApiCallExecutor.execute(expressionFastApiTimeLimiter, () -> restClient.post()
                     .uri(fastApiProperties.getExpressionAnalyzeUri())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
@@ -76,7 +72,7 @@ public class FastApiClient {
 
     public FastApiHealthcareAnalyzeResponse requestHealthcareAnalyze(FastApiHealthcareAnalyzeRequest request) {
         try {
-            return executeWithHardTimeout(healthcareFastApiTimeLimiter, () -> restClient.post()
+            return fastApiCallExecutor.execute(healthcareFastApiTimeLimiter, () -> restClient.post()
                     .uri(fastApiProperties.getHealthcareAnalyzeUri())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
@@ -89,7 +85,7 @@ public class FastApiClient {
 
     public FastApiHealthcareChatResponse requestHealthcareChat(FastApiHealthcareChatRequest request) {
         try {
-            return executeWithHardTimeout(chatFastApiTimeLimiter, () -> restClient.post()
+            return fastApiCallExecutor.execute(chatFastApiTimeLimiter, () -> restClient.post()
                     .uri(fastApiProperties.getHealthcareChatUri())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
@@ -97,19 +93,6 @@ public class FastApiClient {
                     .body(FastApiHealthcareChatResponse.class));
         } catch (Exception e) {
             throw mapFastApiException(e);
-        }
-    }
-
-    private <T> T executeWithHardTimeout(TimeLimiter timeLimiter, Supplier<T> supplier) throws Exception {
-        Future<T> future = fastApiExecutorService.submit(supplier::get);
-        try {
-            return timeLimiter.executeFutureSupplier(() -> future);
-        } catch (CompletionException ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof Exception exception) {
-                throw exception;
-            }
-            throw ex;
         }
     }
 
@@ -122,6 +105,10 @@ public class FastApiClient {
         }
         if (exception instanceof HttpClientErrorException) {
             return new BaseException(ErrorCode.AI_SERVER_BAD_REQUEST, exception);
+        }
+        if (exception instanceof BaseException baseException
+                && baseException.getErrorCode() == ErrorCode.AI_SERVER_BULKHEAD_REJECTED) {
+            return baseException;
         }
         if (isDeserializeException(exception)) {
             return new BaseException(ErrorCode.AI_SERVER_RESPONSE_INVALID, exception);
