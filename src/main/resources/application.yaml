@@ -84,6 +84,13 @@ ai:
     expression-hard-timeout: ${FASTAPI_EXPRESSION_HARD_TIMEOUT:15s}
     healthcare-hard-timeout: ${FASTAPI_HEALTHCARE_HARD_TIMEOUT:20s}
     chat-hard-timeout: ${FASTAPI_CHAT_HARD_TIMEOUT:10s}
+    retry-max-attempts: ${FASTAPI_RETRY_MAX_ATTEMPTS:2}
+    retry-wait-duration: ${FASTAPI_RETRY_WAIT_DURATION:500ms}
+    bulkhead-max-concurrent-calls: ${FASTAPI_BULKHEAD_MAX_CONCURRENT_CALLS:32}
+    bulkhead-max-wait-duration: ${FASTAPI_BULKHEAD_MAX_WAIT_DURATION:0ms}
+    executor-core-pool-size: ${FASTAPI_EXECUTOR_CORE_POOL_SIZE:16}
+    executor-max-pool-size: ${FASTAPI_EXECUTOR_MAX_POOL_SIZE:32}
+    executor-queue-capacity: ${FASTAPI_EXECUTOR_QUEUE_CAPACITY:64}
 
 ranking:
   batch:
