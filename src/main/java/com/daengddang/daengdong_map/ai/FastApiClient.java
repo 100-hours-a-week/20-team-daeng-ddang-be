@@ -107,7 +107,8 @@ public class FastApiClient {
             return new BaseException(ErrorCode.AI_SERVER_BAD_REQUEST, exception);
         }
         if (exception instanceof BaseException baseException
-                && baseException.getErrorCode() == ErrorCode.AI_SERVER_BULKHEAD_REJECTED) {
+                && (baseException.getErrorCode() == ErrorCode.AI_SERVER_BULKHEAD_REJECTED
+                || baseException.getErrorCode() == ErrorCode.AI_SERVER_CIRCUIT_OPEN)) {
             return baseException;
         }
         if (isDeserializeException(exception)) {

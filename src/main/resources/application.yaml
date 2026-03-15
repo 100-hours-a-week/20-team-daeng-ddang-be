@@ -91,6 +91,10 @@ ai:
     executor-core-pool-size: ${FASTAPI_EXECUTOR_CORE_POOL_SIZE:16}
     executor-max-pool-size: ${FASTAPI_EXECUTOR_MAX_POOL_SIZE:32}
     executor-queue-capacity: ${FASTAPI_EXECUTOR_QUEUE_CAPACITY:64}
+    circuit-breaker-failure-rate-threshold: ${FASTAPI_CIRCUIT_BREAKER_FAILURE_RATE_THRESHOLD:50}
+    circuit-breaker-minimum-number-of-calls: ${FASTAPI_CIRCUIT_BREAKER_MINIMUM_NUMBER_OF_CALLS:10}
+    circuit-breaker-wait-duration-in-open-state: ${FASTAPI_CIRCUIT_BREAKER_WAIT_DURATION_IN_OPEN_STATE:15s}
+    circuit-breaker-permitted-number-of-calls-in-half-open-state: ${FASTAPI_CIRCUIT_BREAKER_PERMITTED_NUMBER_OF_CALLS_IN_HALF_OPEN_STATE:3}
 
 ranking:
   batch:
