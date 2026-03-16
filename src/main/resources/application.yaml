@@ -121,7 +121,7 @@ ranking:
     zone: Asia/Seoul
   zset:
     enabled: true
-    read-source: db
+    read-source: zset
 
 analysis:
   backpressure:
