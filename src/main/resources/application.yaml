@@ -147,7 +147,7 @@ analysis:
 
 async:
   sse:
-    enabled: ${ASYNC_SSE_ENABLED:false}
+    enabled: ${ASYNC_SSE_ENABLED:true}
     emitter-timeout-ms: ${ASYNC_SSE_EMITTER_TIMEOUT_MS:180000}
     heartbeat-interval-ms: ${ASYNC_SSE_HEARTBEAT_INTERVAL_MS:15000}
     redis:
