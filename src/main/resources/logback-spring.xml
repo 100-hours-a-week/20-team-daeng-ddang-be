@@ -24,9 +24,6 @@
     <!-- ================================================== -->
     <springProfile name="local,dev">
 
-        <property name="LOG_PATH" value="./logs"/>
-        <property name="APP_NAME" value="daengdong"/>
-
         <!-- 컬러 콘솔 -->
         <appender name="COLOR_CONSOLE"
                   class="ch.qos.logback.core.ConsoleAppender">
@@ -40,19 +37,6 @@
                   class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
                 <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr([WS]){magenta} %clr(%-5level) %clr(%logger{36}){yellow} - %msg%n</pattern>
-            </encoder>
-        </appender>
-
-        <!-- 파일 로그 -->
-        <appender name="FILE"
-                  class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>${LOG_PATH}/${APP_NAME}.log</file>
-            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
-                <maxHistory>14</maxHistory>
-            </rollingPolicy>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
             </encoder>
         </appender>
 
@@ -71,7 +55,6 @@
 
         <root level="DEBUG">
             <appender-ref ref="COLOR_CONSOLE"/>
-            <appender-ref ref="FILE"/>
         </root>
 
     </springProfile>

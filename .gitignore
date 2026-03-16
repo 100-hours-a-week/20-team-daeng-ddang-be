@@ -1,5 +1,6 @@
 HELP.md
 logs
+docker
 k6
 .env
 websocket.csv
