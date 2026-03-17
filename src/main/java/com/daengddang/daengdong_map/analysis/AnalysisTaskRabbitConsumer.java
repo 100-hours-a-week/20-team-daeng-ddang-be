@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -32,8 +33,22 @@ public class AnalysisTaskRabbitConsumer {
             log.info("분석 작업 메시지 처리 완료. taskId={}, type={}, traceId={}",
                     message.taskId(), message.type(), message.traceId());
         } catch (RuntimeException ex) {
-            analysisTaskRabbitMetrics.recordConsumeFail(Duration.between(startedAt, Instant.now()));
-            throw ex;
+            Duration duration = Duration.between(startedAt, Instant.now());
+            analysisTaskRabbitMetrics.recordConsumeFail(duration);
+            log.error("분석 작업 메시지 처리 실패. taskId={}, type={}, traceId={}, queue={}, deadLetterQueue={}, errorType={}, errorMessage={}, durationMs={}",
+                    message.taskId(),
+                    message.type(),
+                    message.traceId(),
+                    properties.getQueue(),
+                    properties.getDeadLetterQueue(),
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    duration.toMillis(),
+                    ex);
+            throw new AmqpRejectAndDontRequeueException(
+                    "analysis task consumer failed and message will be dead-lettered. taskId=" + message.taskId(),
+                    ex
+            );
         }
     }
 }

@@ -145,6 +145,9 @@ analysis:
     exchange: ${ANALYSIS_RABBITMQ_EXCHANGE:analysis.task.exchange}
     queue: ${ANALYSIS_RABBITMQ_QUEUE:analysis.task.queue}
     routing-key: ${ANALYSIS_RABBITMQ_ROUTING_KEY:analysis.task.created}
+    dead-letter-exchange: ${ANALYSIS_RABBITMQ_DEAD_LETTER_EXCHANGE:analysis.task.dlx}
+    dead-letter-queue: ${ANALYSIS_RABBITMQ_DEAD_LETTER_QUEUE:analysis.task.dlq}
+    dead-letter-routing-key: ${ANALYSIS_RABBITMQ_DEAD_LETTER_ROUTING_KEY:analysis.task.failed}
   outbox:
     enabled: ${ANALYSIS_OUTBOX_ENABLED:false}
     fixed-delay-ms: ${ANALYSIS_OUTBOX_FIXED_DELAY_MS:1000}

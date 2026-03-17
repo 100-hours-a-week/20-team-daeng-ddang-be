@@ -16,4 +16,10 @@ public class AnalysisRabbitMqProperties {
     private String queue = "analysis.task.queue";
 
     private String routingKey = "analysis.task.created";
+
+    private String deadLetterExchange = "analysis.task.dlx";
+
+    private String deadLetterQueue = "analysis.task.dlq";
+
+    private String deadLetterRoutingKey = "analysis.task.failed";
 }
