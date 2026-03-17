@@ -1,8 +1,10 @@
 package com.daengddang.daengdong_map.service;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
+import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadyFailedException;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTask;
+import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTaskStatus;
 import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTaskType;
 import com.daengddang.daengdong_map.dto.request.expression.ExpressionAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.request.healthcare.HealthcareAnalyzeRequest;
@@ -26,6 +28,24 @@ public class ExternalAnalysisTaskProcessor {
     private final ExpressionRepository expressionRepository;
 
     public void process(String taskId) {
+        try {
+            processOrThrow(taskId);
+        } catch (BaseException ex) {
+            String code = ex.getErrorCode().name();
+            log.warn("외부 분석 작업 처리 실패(BaseException). taskId={}, errorCode={}, message={}",
+                    taskId, code, ex.getMessage(), ex);
+            externalAnalysisTaskStateService.markFail(taskId, code, ex.getErrorCode().getMessage());
+        } catch (Exception ex) {
+            log.error("외부 분석 작업 처리 중 예외. taskId={}", taskId, ex);
+            externalAnalysisTaskStateService.markFail(
+                    taskId,
+                    ErrorCode.INTERNAL_SERVER_ERROR.name(),
+                    ErrorCode.INTERNAL_SERVER_ERROR.getMessage()
+            );
+        }
+    }
+
+    public void processOrThrow(String taskId) {
         ExternalAnalysisTask task = externalAnalysisTaskRepository.findWithContextByTaskId(taskId)
                 .orElse(null);
         if (task == null) {
@@ -34,27 +54,17 @@ public class ExternalAnalysisTaskProcessor {
         }
 
         if (!externalAnalysisTaskStateService.markRunningIfPending(taskId)) {
+            if (task.getStatus() == ExternalAnalysisTaskStatus.FAIL) {
+                log.warn("외부 분석 작업이 이미 FAIL 상태라 재전달 메시지를 DLQ로 보냅니다. taskId={}", taskId);
+                throw new AnalysisTaskAlreadyFailedException(taskId);
+            }
             log.info("외부 분석 작업 상태 전이 생략(이미 처리 중/완료). taskId={}", taskId);
             return;
         }
 
-        try {
-            TaskResultRef resultRef = execute(task);
-            externalAnalysisTaskStateService.markSuccessIfRunning(taskId, resultRef.resultType(), resultRef.resultId());
-            log.info("외부 분석 작업 처리 성공. taskId={}, type={}", taskId, task.getType());
-        } catch (BaseException ex) {
-            String code = ex.getErrorCode().name();
-            log.warn("외부 분석 작업 처리 실패(BaseException). taskId={}, type={}, errorCode={}, message={}",
-                    taskId, task.getType(), code, ex.getMessage(), ex);
-            externalAnalysisTaskStateService.markFail(taskId, code, ex.getErrorCode().getMessage());
-        } catch (Exception ex) {
-            log.error("외부 분석 작업 처리 중 예외. taskId={}, type={}", taskId, task.getType(), ex);
-            externalAnalysisTaskStateService.markFail(
-                    taskId,
-                    ErrorCode.INTERNAL_SERVER_ERROR.name(),
-                    ErrorCode.INTERNAL_SERVER_ERROR.getMessage()
-            );
-        }
+        TaskResultRef resultRef = execute(task);
+        externalAnalysisTaskStateService.markSuccessIfRunning(taskId, resultRef.resultType(), resultRef.resultId());
+        log.info("외부 분석 작업 처리 성공. taskId={}, type={}", taskId, task.getType());
     }
 
     private TaskResultRef execute(ExternalAnalysisTask task) {

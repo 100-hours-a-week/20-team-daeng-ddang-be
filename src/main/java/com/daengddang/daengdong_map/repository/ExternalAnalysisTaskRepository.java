@@ -147,6 +147,27 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             update ExternalAnalysisTask task
+               set task.status = :pending,
+                   task.startedAt = null,
+                   task.finishedAt = null,
+                   task.errorCode = :errorCode,
+                   task.errorMessage = :errorMessage,
+                   task.resultType = null,
+                   task.resultId = null
+             where task.taskId = :taskId
+               and task.status = :running
+            """)
+    int markPendingForRetryIfRunning(
+            @Param("taskId") String taskId,
+            @Param("running") ExternalAnalysisTaskStatus running,
+            @Param("pending") ExternalAnalysisTaskStatus pending,
+            @Param("errorCode") String errorCode,
+            @Param("errorMessage") String errorMessage
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update ExternalAnalysisTask task
                set task.status = :fail,
                    task.finishedAt = :finishedAt,
                    task.errorCode = :errorCode,
