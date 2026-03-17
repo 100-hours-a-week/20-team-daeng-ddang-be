@@ -13,5 +13,7 @@ public class AnalysisBackpressureProperties {
 
     private int maxActiveTasks = 180;
 
+    private int maxOutboxPendingTasks = 1000;
+
     private int retryAfterSeconds = 3;
 }

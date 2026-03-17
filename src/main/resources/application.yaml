@@ -127,6 +127,7 @@ analysis:
   backpressure:
     enabled: ${ANALYSIS_BACKPRESSURE_ENABLED:true}
     max-active-tasks: ${ANALYSIS_BACKPRESSURE_MAX_ACTIVE_TASKS:180}
+    max-outbox-pending-tasks: ${ANALYSIS_BACKPRESSURE_MAX_OUTBOX_PENDING_TASKS:1000}
     retry-after-seconds: ${ANALYSIS_BACKPRESSURE_RETRY_AFTER_SECONDS:3}
   sweep:
     enabled: ${ANALYSIS_SWEEP_ENABLED:true}
