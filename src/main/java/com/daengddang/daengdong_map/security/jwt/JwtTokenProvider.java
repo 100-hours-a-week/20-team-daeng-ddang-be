@@ -8,6 +8,7 @@ import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -50,6 +51,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .setIssuer(properties.getIssuer())
+                .setId(UUID.randomUUID().toString())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))
                 .signWith(key, SignatureAlgorithm.HS256)

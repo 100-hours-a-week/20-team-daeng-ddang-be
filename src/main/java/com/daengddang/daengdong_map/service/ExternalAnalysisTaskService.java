@@ -32,6 +32,7 @@ public class ExternalAnalysisTaskService {
     private final AccessValidator accessValidator;
     private final MissionUploadRepository missionUploadRepository;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
+    private final AnalysisTaskOutboxService analysisTaskOutboxService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -99,6 +100,7 @@ public class ExternalAnalysisTaskService {
                             .dog(walk.getDog())
                             .build()
             );
+            analysisTaskOutboxService.saveTaskCreatedOutbox(saved);
             eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
@@ -124,6 +126,7 @@ public class ExternalAnalysisTaskService {
                             .dog(dog)
                             .build()
             );
+            analysisTaskOutboxService.saveTaskCreatedOutbox(saved);
             eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
