@@ -145,6 +145,11 @@ analysis:
     exchange: ${ANALYSIS_RABBITMQ_EXCHANGE:analysis.task.exchange}
     queue: ${ANALYSIS_RABBITMQ_QUEUE:analysis.task.queue}
     routing-key: ${ANALYSIS_RABBITMQ_ROUTING_KEY:analysis.task.created}
+    retry-exchange: ${ANALYSIS_RABBITMQ_RETRY_EXCHANGE:analysis.task.retry.exchange}
+    retry-queue: ${ANALYSIS_RABBITMQ_RETRY_QUEUE:analysis.task.retry.queue}
+    retry-routing-key: ${ANALYSIS_RABBITMQ_RETRY_ROUTING_KEY:analysis.task.retry}
+    retry-delay-ms: ${ANALYSIS_RABBITMQ_RETRY_DELAY_MS:60000}
+    retry-max-attempts: ${ANALYSIS_RABBITMQ_RETRY_MAX_ATTEMPTS:1}
     dead-letter-exchange: ${ANALYSIS_RABBITMQ_DEAD_LETTER_EXCHANGE:analysis.task.dlx}
     dead-letter-queue: ${ANALYSIS_RABBITMQ_DEAD_LETTER_QUEUE:analysis.task.dlq}
     dead-letter-routing-key: ${ANALYSIS_RABBITMQ_DEAD_LETTER_ROUTING_KEY:analysis.task.failed}
