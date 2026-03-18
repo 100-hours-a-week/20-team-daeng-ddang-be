@@ -2,6 +2,8 @@ package com.daengddang.daengdong_map.service;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadyFailedException;
+import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadyRunningException;
+import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadySucceededException;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTask;
 import com.daengddang.daengdong_map.domain.task.ExternalAnalysisTaskStatus;
@@ -54,12 +56,26 @@ public class ExternalAnalysisTaskProcessor {
         }
 
         if (!externalAnalysisTaskStateService.markRunningIfPending(taskId)) {
-            if (task.getStatus() == ExternalAnalysisTaskStatus.FAIL) {
-                log.warn("외부 분석 작업이 이미 FAIL 상태라 재전달 메시지를 DLQ로 보냅니다. taskId={}", taskId);
-                throw new AnalysisTaskAlreadyFailedException(taskId);
+            ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
+                    .orElse(task.getStatus());
+            switch (currentStatus) {
+                case FAIL -> {
+                    log.warn("외부 분석 작업이 이미 FAIL 상태라 재전달 메시지를 DLQ로 보냅니다. taskId={}", taskId);
+                    throw new AnalysisTaskAlreadyFailedException(taskId);
+                }
+                case SUCCESS -> {
+                    log.info("외부 분석 작업이 이미 SUCCESS 상태라 중복 메시지를 건너뜁니다. taskId={}", taskId);
+                    throw new AnalysisTaskAlreadySucceededException(taskId);
+                }
+                case RUNNING -> {
+                    log.warn("외부 분석 작업이 이미 RUNNING 상태라 중복 실행을 건너뜁니다. taskId={}", taskId);
+                    throw new AnalysisTaskAlreadyRunningException(taskId);
+                }
+                case PENDING -> {
+                    log.warn("외부 분석 작업이 아직 PENDING 상태라 이번 메시지 처리를 건너뜁니다. taskId={}", taskId);
+                    return;
+                }
             }
-            log.info("외부 분석 작업 상태 전이 생략(이미 처리 중/완료). taskId={}", taskId);
-            return;
         }
 
         TaskResultRef resultRef = execute(task);

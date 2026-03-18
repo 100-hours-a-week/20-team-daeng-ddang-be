@@ -18,6 +18,13 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     Optional<ExternalAnalysisTask> findByTaskId(String taskId);
 
+    @Query("""
+            select task.status
+              from ExternalAnalysisTask task
+             where task.taskId = :taskId
+            """)
+    Optional<ExternalAnalysisTaskStatus> findStatusByTaskId(@Param("taskId") String taskId);
+
     @EntityGraph(attributePaths = {"walk", "dog", "dog.user"})
     Optional<ExternalAnalysisTask> findWithContextByTaskId(String taskId);
 

@@ -2,6 +2,8 @@ package com.daengddang.daengdong_map.analysis;
 
 import com.daengddang.daengdong_map.common.ErrorCode;
 import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadyFailedException;
+import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadyRunningException;
+import com.daengddang.daengdong_map.common.exception.AnalysisTaskAlreadySucceededException;
 import com.daengddang.daengdong_map.common.exception.BaseException;
 import com.daengddang.daengdong_map.common.exception.RetryableAnalysisTaskException;
 import com.daengddang.daengdong_map.service.ExternalAnalysisTaskProcessor;
@@ -96,8 +98,8 @@ public class AnalysisTaskRabbitConsumer {
             );
         } catch (RuntimeException ex) {
             Duration duration = Duration.between(startedAt, Instant.now());
-            analysisTaskRabbitMetrics.recordConsumeFail(duration);
             if (ex instanceof AnalysisTaskAlreadyFailedException) {
+                analysisTaskRabbitMetrics.recordConsumeFail(duration);
                 log.error("분석 작업 메시지가 이미 FAIL 상태라 DLQ로 보냅니다. taskId={}, type={}, traceId={}, queue={}, deadLetterQueue={}, retryCount={}, durationMs={}",
                         message.taskId(),
                         message.type(),
@@ -112,6 +114,19 @@ public class AnalysisTaskRabbitConsumer {
                         ex
                 );
             }
+            if (ex instanceof AnalysisTaskAlreadySucceededException || ex instanceof AnalysisTaskAlreadyRunningException) {
+                analysisTaskRabbitMetrics.recordConsumeSuccess(duration);
+                log.warn("분석 작업 메시지 중복 수신을 건너뜁니다. taskId={}, type={}, traceId={}, queue={}, retryCount={}, reason={}, durationMs={}",
+                        message.taskId(),
+                        message.type(),
+                        message.traceId(),
+                        properties.getQueue(),
+                        retryCount,
+                        ex.getMessage(),
+                        duration.toMillis());
+                return;
+            }
+            analysisTaskRabbitMetrics.recordConsumeFail(duration);
             externalAnalysisTaskStateService.markFail(
                     message.taskId(),
                     ErrorCode.INTERNAL_SERVER_ERROR.name(),
