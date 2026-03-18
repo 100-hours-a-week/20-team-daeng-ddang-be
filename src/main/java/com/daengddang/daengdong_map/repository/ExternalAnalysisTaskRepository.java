@@ -37,6 +37,11 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
             ExternalAnalysisTaskType type
     );
 
+    Optional<ExternalAnalysisTask> findTopByDogIdAndTypeOrderByRequestedAtDescIdDesc(
+            Long dogId,
+            ExternalAnalysisTaskType type
+    );
+
     Optional<ExternalAnalysisTask> findTopByWalkIdAndTypeAndStatusInOrderByRequestedAtDescIdDesc(
             Long walkId,
             ExternalAnalysisTaskType type,
@@ -58,6 +63,10 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     default Optional<ExternalAnalysisTask> findLatestByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
         return findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
+    }
+
+    default Optional<ExternalAnalysisTask> findLatestByDogIdAndType(Long dogId, ExternalAnalysisTaskType type) {
+        return findTopByDogIdAndTypeOrderByRequestedAtDescIdDesc(dogId, type);
     }
 
     default Optional<ExternalAnalysisTask> findLatestActiveByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
