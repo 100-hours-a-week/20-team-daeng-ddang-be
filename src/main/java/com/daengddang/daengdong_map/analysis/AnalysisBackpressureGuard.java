@@ -4,6 +4,7 @@ import com.daengddang.daengdong_map.common.exception.AnalysisBackpressureExcepti
 import com.daengddang.daengdong_map.domain.task.AnalysisTaskOutboxStatus;
 import com.daengddang.daengdong_map.repository.AnalysisTaskOutboxRepository;
 import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +12,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AnalysisBackpressureGuard {
 
+    private static final long OUTBOX_PENDING_CACHE_TTL_NANOS = Duration.ofMillis(200).toNanos();
+
     private final AnalysisBackpressureProperties properties;
     private final AnalysisRabbitMqProperties rabbitMqProperties;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
     private final AnalysisTaskOutboxRepository analysisTaskOutboxRepository;
+
+    private volatile long cachedPendingOutboxTasks;
+    private volatile long cachedPendingOutboxTasksLoadedAt;
 
     public void validateOrThrow() {
         if (!properties.isEnabled()) {
@@ -37,7 +43,7 @@ public class AnalysisBackpressureGuard {
     }
 
     private void validateOutboxPendingOrThrow() {
-        long pendingOutboxTasks = analysisTaskOutboxRepository.countByStatus(AnalysisTaskOutboxStatus.PENDING);
+        long pendingOutboxTasks = getPendingOutboxTasks();
         if (pendingOutboxTasks >= properties.getMaxOutboxPendingTasks()) {
             throw new AnalysisBackpressureException(
                     properties.getRetryAfterSeconds(),
@@ -45,5 +51,18 @@ public class AnalysisBackpressureGuard {
                     properties.getMaxOutboxPendingTasks()
             );
         }
+    }
+
+    private long getPendingOutboxTasks() {
+        long now = System.nanoTime();
+        long loadedAt = cachedPendingOutboxTasksLoadedAt;
+        if (now - loadedAt < OUTBOX_PENDING_CACHE_TTL_NANOS) {
+            return cachedPendingOutboxTasks;
+        }
+
+        long latestCount = analysisTaskOutboxRepository.countByStatus(AnalysisTaskOutboxStatus.PENDING);
+        cachedPendingOutboxTasks = latestCount;
+        cachedPendingOutboxTasksLoadedAt = now;
+        return latestCount;
     }
 }

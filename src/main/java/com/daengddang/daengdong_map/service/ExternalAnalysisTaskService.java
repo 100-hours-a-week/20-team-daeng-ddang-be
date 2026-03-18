@@ -42,7 +42,7 @@ public class ExternalAnalysisTaskService {
         if (walk.getStatus() != WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
-        if (missionUploadRepository.findAllByWalk(walk).isEmpty()) {
+        if (!missionUploadRepository.existsByWalk(walk)) {
             throw new BaseException(ErrorCode.RESOURCE_NOT_FOUND);
         }
         return createOrReuseWalkTask(walk, ExternalAnalysisTaskType.MISSION, null);

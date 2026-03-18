@@ -14,6 +14,19 @@ public interface WalkRepository extends JpaRepository<Walk, Long> {
 
     Optional<Walk> findByIdAndDog(Long id, Dog dog);
 
+    @Query("""
+            select walk
+            from Walk walk
+            join fetch walk.dog dog
+            join fetch dog.user user
+            where walk.id = :walkId
+              and user.id = :userId
+            """)
+    Optional<Walk> findOwnedWalkByIdAndUserId(
+            @Param("walkId") Long walkId,
+            @Param("userId") Long userId
+    );
+
     boolean existsByDogAndStatus(Dog dog, WalkStatus status);
 
     @Query("""
