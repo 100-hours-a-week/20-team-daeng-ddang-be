@@ -44,3 +44,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+scripts/prepare_mission_analysis_dataset_batch.sh
+scripts/prepare_mission_analysis_walks_batch.sh
+scripts/restore_mission_uploads_from_prepared.sh
