@@ -3,10 +3,11 @@ package com.daengddang.daengdong_map.util;
 import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.dto.request.chat.FastApiHealthcareChatRequest;
 import com.daengddang.daengdong_map.dto.request.chat.HealthcareChatRequest;
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryMessage;
 import com.daengddang.daengdong_map.service.chat.session.ChatSession;
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.Collections;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +15,8 @@ public class HealthcareChatContextBuilder {
 
     public FastApiHealthcareChatRequest buildFastApiRequest(Dog dog,
                                                             HealthcareChatRequest request,
-                                                            ChatSession session) {
+                                                            ChatSession session,
+                                                            List<ChatHistoryMessage> history) {
         FastApiHealthcareChatRequest.UserContext userContext =
                 FastApiHealthcareChatRequest.UserContext.of(
                         calculateDogAgeYears(dog),
@@ -28,7 +30,12 @@ public class HealthcareChatContextBuilder {
                 FastApiHealthcareChatRequest.Message.of("user", request.getMessage()),
                 request.getImageUrl(),
                 userContext,
-                Collections.emptyList()
+                history.stream()
+                        .map(message -> FastApiHealthcareChatRequest.HistoryItem.of(
+                                message.getRole(),
+                                message.getContent()
+                        ))
+                        .toList()
         );
     }
 

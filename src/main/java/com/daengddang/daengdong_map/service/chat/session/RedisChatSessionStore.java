@@ -1,5 +1,6 @@
 package com.daengddang.daengdong_map.service.chat.session;
 
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryStore;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -16,9 +17,12 @@ public class RedisChatSessionStore implements ChatSessionStore {
     private static final String KEY_PREFIX = "chat:session:";
 
     private final RedissonClient redissonClient;
+    private final ChatHistoryStore chatHistoryStore;
 
-    public RedisChatSessionStore(RedissonClient redissonClient) {
+    public RedisChatSessionStore(RedissonClient redissonClient,
+                                 ChatHistoryStore chatHistoryStore) {
         this.redissonClient = redissonClient;
+        this.chatHistoryStore = chatHistoryStore;
     }
 
     @Override
@@ -73,6 +77,7 @@ public class RedisChatSessionStore implements ChatSessionStore {
 
     @Override
     public void remove(String conversationId) {
+        chatHistoryStore.remove(conversationId);
         redissonClient.getKeys().delete(key(conversationId));
     }
 

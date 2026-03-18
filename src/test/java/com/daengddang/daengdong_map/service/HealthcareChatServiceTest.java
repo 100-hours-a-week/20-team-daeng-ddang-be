@@ -18,11 +18,14 @@ import com.daengddang.daengdong_map.dto.request.chat.HealthcareChatRequest;
 import com.daengddang.daengdong_map.dto.response.chat.FastApiHealthcareChatResponse;
 import com.daengddang.daengdong_map.dto.response.chat.HealthcareChatResponse;
 import com.daengddang.daengdong_map.dto.response.chat.HealthcareChatSessionResponse;
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryMessage;
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryStore;
 import com.daengddang.daengdong_map.service.chat.session.ChatSession;
 import com.daengddang.daengdong_map.service.chat.session.ChatSessionStore;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import com.daengddang.daengdong_map.util.HealthcareChatContextBuilder;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +45,9 @@ class HealthcareChatServiceTest {
 
     @Mock
     private ChatSessionStore chatSessionStore;
+
+    @Mock
+    private ChatHistoryStore chatHistoryStore;
 
     @Mock
     private HealthcareChatContextBuilder healthcareChatContextBuilder;
@@ -128,7 +134,8 @@ class HealthcareChatServiceTest {
 
         when(accessValidator.getDogOrThrow(1L)).thenReturn(dog);
         when(chatSessionStore.find("vet_sess_abc")).thenReturn(Optional.of(session));
-        when(healthcareChatContextBuilder.buildFastApiRequest(dog, request, session)).thenReturn(fastApiRequest);
+        when(chatHistoryStore.findAll("vet_sess_abc")).thenReturn(List.of());
+        when(healthcareChatContextBuilder.buildFastApiRequest(dog, request, session, List.of())).thenReturn(fastApiRequest);
         when(fastApiClient.requestHealthcareChat(fastApiRequest)).thenReturn(invalidResponse);
 
         assertThatThrownBy(() -> healthcareChatService.sendMessage(1L, request))
@@ -167,7 +174,9 @@ class HealthcareChatServiceTest {
 
         when(accessValidator.getDogOrThrow(1L)).thenReturn(dog);
         when(chatSessionStore.find("vet_sess_abc")).thenReturn(Optional.of(session));
-        when(healthcareChatContextBuilder.buildFastApiRequest(dog, request, session)).thenReturn(fastApiRequest);
+        List<ChatHistoryMessage> history = List.of(ChatHistoryMessage.of("user", "prev"));
+        when(chatHistoryStore.findAll("vet_sess_abc")).thenReturn(history);
+        when(healthcareChatContextBuilder.buildFastApiRequest(dog, request, session, history)).thenReturn(fastApiRequest);
         when(fastApiClient.requestHealthcareChat(fastApiRequest)).thenReturn(fastApiResponse);
 
         HealthcareChatResponse response = healthcareChatService.sendMessage(1L, request);
@@ -175,6 +184,8 @@ class HealthcareChatServiceTest {
         assertThat(response.getConversationId()).isEqualTo("vet_sess_abc");
         assertThat(response.getAnsweredAt()).isEqualTo(OffsetDateTime.parse("2026-02-23T12:00:10Z"));
         assertThat(response.getAnswer()).isEqualTo("answer");
+        verify(chatHistoryStore).append(eq("vet_sess_abc"), eq(ChatHistoryMessage.of("user", "hello")), any());
+        verify(chatHistoryStore).append(eq("vet_sess_abc"), eq(ChatHistoryMessage.of("assistant", "answer")), any());
         verify(chatSessionStore).extend(eq("vet_sess_abc"), any());
     }
 
