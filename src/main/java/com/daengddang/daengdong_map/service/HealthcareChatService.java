@@ -8,6 +8,8 @@ import com.daengddang.daengdong_map.dto.request.chat.HealthcareChatRequest;
 import com.daengddang.daengdong_map.dto.response.chat.FastApiHealthcareChatResponse;
 import com.daengddang.daengdong_map.dto.response.chat.HealthcareChatResponse;
 import com.daengddang.daengdong_map.dto.response.chat.HealthcareChatSessionResponse;
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryMessage;
+import com.daengddang.daengdong_map.service.chat.history.ChatHistoryStore;
 import com.daengddang.daengdong_map.util.HealthcareChatContextBuilder;
 import com.daengddang.daengdong_map.service.chat.session.ChatSession;
 import com.daengddang.daengdong_map.service.chat.session.ChatSessionStore;
@@ -29,6 +31,7 @@ public class HealthcareChatService {
     private final AccessValidator accessValidator;
     private final FastApiClient fastApiClient;
     private final ChatSessionStore chatSessionStore;
+    private final ChatHistoryStore chatHistoryStore;
     private final HealthcareChatContextBuilder healthcareChatContextBuilder;
 
     public HealthcareChatSessionResponse createSession(Long userId) {
@@ -47,10 +50,25 @@ public class HealthcareChatService {
         ChatSession session = validateSession(userId, dog.getId(), request.getConversationId());
 
         FastApiHealthcareChatResponse fastApiResponse = fastApiClient.requestHealthcareChat(
-                healthcareChatContextBuilder.buildFastApiRequest(dog, request, session)
+                healthcareChatContextBuilder.buildFastApiRequest(
+                        dog,
+                        request,
+                        session,
+                        chatHistoryStore.findAll(session.getConversationId())
+                )
         );
         validateFastApiResponse(fastApiResponse, session, request.getConversationId());
 
+        chatHistoryStore.append(
+                session.getConversationId(),
+                ChatHistoryMessage.of("user", request.getMessage()),
+                SESSION_TTL
+        );
+        chatHistoryStore.append(
+                session.getConversationId(),
+                ChatHistoryMessage.of("assistant", fastApiResponse.getAnswer()),
+                SESSION_TTL
+        );
         chatSessionStore.extend(session.getConversationId(), SESSION_TTL);
 
         return HealthcareChatResponse.of(
