@@ -28,7 +28,20 @@ public class AnalysisRabbitMqConfig {
 
     @Bean
     public Queue analysisTaskQueue(AnalysisRabbitMqProperties properties) {
-        return QueueBuilder.durable(properties.getQueue()).build();
+        return QueueBuilder.durable(properties.getQueue())
+                .deadLetterExchange(properties.getDeadLetterExchange())
+                .deadLetterRoutingKey(properties.getDeadLetterRoutingKey())
+                .build();
+    }
+
+    @Bean
+    public TopicExchange analysisTaskDeadLetterExchange(AnalysisRabbitMqProperties properties) {
+        return new TopicExchange(properties.getDeadLetterExchange(), true, false);
+    }
+
+    @Bean
+    public Queue analysisTaskDeadLetterQueue(AnalysisRabbitMqProperties properties) {
+        return QueueBuilder.durable(properties.getDeadLetterQueue()).build();
     }
 
     @Bean
@@ -40,6 +53,17 @@ public class AnalysisRabbitMqConfig {
         return BindingBuilder.bind(analysisTaskQueue)
                 .to(analysisTaskExchange)
                 .with(properties.getRoutingKey());
+    }
+
+    @Bean
+    public Binding analysisTaskDeadLetterBinding(
+            Queue analysisTaskDeadLetterQueue,
+            TopicExchange analysisTaskDeadLetterExchange,
+            AnalysisRabbitMqProperties properties
+    ) {
+        return BindingBuilder.bind(analysisTaskDeadLetterQueue)
+                .to(analysisTaskDeadLetterExchange)
+                .with(properties.getDeadLetterRoutingKey());
     }
 
     @Bean
