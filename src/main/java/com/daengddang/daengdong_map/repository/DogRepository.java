@@ -13,6 +13,14 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 
     Optional<Dog> findByUser(User user);
 
+    @Query("""
+            select dog
+            from Dog dog
+            join fetch dog.user user
+            where user.id = :userId
+            """)
+    Optional<Dog> findActiveByUserId(@Param("userId") Long userId);
+
     @Query(value = "select * from dogs where user_id = :userId", nativeQuery = true)
     Optional<Dog> findByUserIdIncludingDeleted(@Param("userId") Long userId);
 

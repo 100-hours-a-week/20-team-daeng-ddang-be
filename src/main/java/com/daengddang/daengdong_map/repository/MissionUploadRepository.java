@@ -15,5 +15,7 @@ public interface MissionUploadRepository extends JpaRepository<MissionUpload, Lo
     @EntityGraph(attributePaths = {"mission"})
     List<MissionUpload> findAllByWalk(Walk walk);
 
+    boolean existsByWalk(Walk walk);
+
     long countByWalk(Walk walk);
 }
