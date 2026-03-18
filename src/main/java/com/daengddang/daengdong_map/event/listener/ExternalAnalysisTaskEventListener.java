@@ -4,6 +4,7 @@ import com.daengddang.daengdong_map.event.ExternalAnalysisTaskCreatedEvent;
 import com.daengddang.daengdong_map.service.ExternalAnalysisTaskProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -12,6 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "analysis.rabbitmq", name = "enabled", havingValue = "false", matchIfMissing = true)
 public class ExternalAnalysisTaskEventListener {
 
     private final ExternalAnalysisTaskProcessor externalAnalysisTaskProcessor;
