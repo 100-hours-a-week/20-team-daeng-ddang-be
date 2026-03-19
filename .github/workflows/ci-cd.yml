@@ -174,256 +174,45 @@ jobs:
 
           curl -sS -X POST -H "Content-Type: application/json" --data-binary "$JSON_PAYLOAD" "$WEBHOOK" || true
 
-  cd-prod:
-    name: CD (Prod)
-    needs: ci
+  cd:
+    name: CD
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    needs: ci
+    timeout-minutes: 10
 
-    if: github.event_name == 'push' && github.ref_name == 'main'
+    # push일 때만 배포
+    if: github.event_name == 'push'
 
     environment:
-      name: prod
-
+      name: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     env:
-      ENV_NAME: prod
+      ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+      MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
+      MANIFEST_BRANCH: ${{ secrets.MANIFEST_BRANCH }}
+      MANIFEST_PATH: ${{ vars.MANIFEST_PATH }}
 
     steps:
-      - name: Mark CD start
-        id: cd_time
-        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout (for docker-compose.yml)
+      - name: Checkout manifest repo
         uses: actions/checkout@v4
         with:
-          sparse-checkout: docker-compose.yml
-          sparse-checkout-cone-mode: false
+          repository: ${{ env.MANIFEST_REPO }}
+          ref: ${{ env.MANIFEST_BRANCH }}
+          ssh-key: ${{ secrets.DAENG_MAP_DEPLOY_KEY }}
+          path: manifest
 
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-northeast-2
-
-      - name: Check if image tag is already deployed
-        id: check_tag
+      - name: Update image tag
         run: |
-          set -euo pipefail
+          cd manifest
+          sed -i "s|tag:.*|tag: \"${{ env.RELEASE_ID }}\"|" ${{ env.MANIFEST_PATH }}
+          echo "Updated image tag to: ${{ env.RELEASE_ID }}"
+          grep "tag:" ${{ env.MANIFEST_PATH }}
 
-          # 1. 현재 배포되어 있는 태그 가져오기
-          CURRENT_TAG=$(aws ssm get-parameter \
-            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
-            --query "Parameter.Value" \
-            --output text 2>/dev/null || echo "none")
-
-          TARGET_TAG="${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
-
-          echo "🔍 현재 배포된 태그: $CURRENT_TAG"
-          echo "🚀 배포하려는 태그: $TARGET_TAG"
-
-          echo "prev_tag=$CURRENT_TAG" >> "$GITHUB_OUTPUT"
-
-          if [ "$CURRENT_TAG" = "$TARGET_TAG" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "⚠️ 이미 동일한 버전이 배포되어 있습니다. 배포를 건너뜁니다."
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload docker-compose.yml to S3
-        if: steps.check_tag.outputs.skip != 'true'
-        id: s3
-        env:
-          S3_BUCKET: ${{ secrets.DEPLOY_BUCKET }}
-        run: |
-          aws s3 cp docker-compose.yml \
-            "s3://${{ secrets.DEPLOY_BUCKET }}/be/${{ env.ENV_NAME }}/docker-compose.yml"
-          echo "✅ docker-compose.yml S3 업로드 완료"
-
-      - name: Update SSM Parameter (Docker image tag)
-        if: steps.check_tag.outputs.skip != 'true'
-        id: ssm
-        run: |
-          aws ssm put-parameter \
-            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/current" \
-            --value "${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}" \
-            --type String \
-            --overwrite
-
-          echo "✅ SSM 파라미터 업데이트 완료: ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_ID }}"
-
-      - name: Create new Launch Template version
-        if: steps.check_tag.outputs.skip != 'true'
-        id: lt
-        run: |
-          set -euo pipefail
-
-          # 현재 Launch Template의 User Data를 유지하며 Description만 변경하여 새 버전 생성
-          NEW_VERSION=$(aws ec2 create-launch-template-version \
-            --launch-template-id "${{ secrets.BE_LAUNCH_TEMPLATE_ID }}" \
-            --source-version '$Latest' \
-            --version-description "deploy-${{ env.RELEASE_ID }}" \
-            --launch-template-data '{}' \
-            --query 'LaunchTemplateVersion.VersionNumber' \
-            --output text)
-          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "📋 새 Launch Template 버전: ${NEW_VERSION}"
-
-      - name: Start ASG Instance Refresh
-        if: steps.check_tag.outputs.skip != 'true'
+      - name: Commit & push
         id: deploy
         run: |
-          set -euo pipefail
-
-          echo "🚀 ASG Instance Refresh 시작: ${{ secrets.BE_ASG_NAME }}"
-
-          REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name "${{ secrets.BE_ASG_NAME }}" \
-            --preferences '{
-              "MinHealthyPercentage": 100,
-              "InstanceWarmup": 180,
-              "SkipMatching": true
-            }' \
-            --query 'InstanceRefreshId' \
-            --output text)
-
-          echo "refresh_id=${REFRESH_ID}" >> "$GITHUB_OUTPUT"
-          echo "📋 Instance Refresh ID: ${REFRESH_ID}"
-
-      - name: Wait for Instance Refresh
-        if: steps.check_tag.outputs.skip != 'true'
-        run: |
-          set -euo pipefail
-
-          ASG_NAME="${{ secrets.BE_ASG_NAME }}"
-          REFRESH_ID="${{ steps.deploy.outputs.refresh_id }}"
-
-          echo "⏳ Instance Refresh 완료 대기 중..."
-
-          while true; do
-            STATUS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name "${ASG_NAME}" \
-              --instance-refresh-ids "${REFRESH_ID}" \
-              --query 'InstanceRefreshes[0].Status' \
-              --output text)
-
-            PROGRESS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name "${ASG_NAME}" \
-              --instance-refresh-ids "${REFRESH_ID}" \
-              --query 'InstanceRefreshes[0].PercentageComplete' \
-              --output text 2>/dev/null || echo "0")
-
-            echo "📊 상태: ${STATUS} (${PROGRESS}%)"
-            case "${STATUS}" in
-              Successful)
-                echo "✅ Instance Refresh 성공!"
-                break
-                ;;
-              Cancelled|Failed|RollbackSuccessful|RollbackFailed)
-                echo "❌ Instance Refresh 실패: ${STATUS}"
-                exit 1
-                ;;
-              *)
-                sleep 15
-                ;;
-            esac
-          done
-
-      # 새로운 버전으로 배포가 성공했으며 직전 배포가 존재할 때 백업 이미지로 저장
-      - name: Backup Previous Tag
-        if: |
-          steps.check_tag.outputs.skip != 'true' && 
-          steps.check_tag.outputs.prev_tag != 'none' &&
-          success()
-        run: |
-          echo "📦 직전 버전 백업 중: ${{ steps.check_tag.outputs.prev_tag }}"
-          aws ssm put-parameter \
-            --name "${{ secrets.BE_SSM_DOCKER_IMAGE_PARAM }}/backup" \
-            --value "${{ steps.check_tag.outputs.prev_tag }}" \
-            --type String \
-            --overwrite
-          echo "✅ 백업 완료"
-
-      - name: Mark CD end
-        id: cd_time_end
-        if: always()
-        run: echo "end=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-      - name: Notify (CD)
-        if: always()
-        env:
-          SKIP: ${{ steps.check_tag.outputs.skip || 'false' }}
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          MESSAGE: ${{ env.MESSAGE }}
-          JOB_STATUS: ${{ job.status }}
-          RELEASE_ID: ${{ env.RELEASE_ID }}
-          ACTOR: ${{ github.actor }}
-          BRANCH: ${{ github.ref_name }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          TIMESTAMP: ${{ github.event.head_commit.timestamp }}
-          CD_START: ${{ steps.cd_time.outputs.start }}
-          CD_END: ${{ steps.cd_time.outputs.end }}
-          S3_OUTCOME: ${{ steps.s3.outcome }}
-          SSM_OUTCOME: ${{ steps.ssm.outcome }}
-          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
-        run: |
-          set -euo pipefail
-
-          [ -z "${WEBHOOK:-}" ] && echo "⚠️ DISCORD_WEBHOOK_URL이 공백이므로 본 단계를 스킵합니다." && exit 0
-
-          # 안전한 산술 계산용 함수
-          dur() { local s="${1:-}" e="${2:-}"; [ -n "$s" ] && [ -n "$e" ] && echo $((e - s)) || echo 0; }
-          cd_total="$(dur "$CD_START" "$CD_END")"
-
-          if [ "$JOB_STATUS" = "success" ]; then
-            TITLE="✅ [BE / ${ENV_NAME}] CD Success"
-            COLOR=5763719
-          elif [ "$JOB_STATUS" = "cancelled" ]; then
-            TITLE="⚠️ [BE / ${ENV_NAME}] CD Cancelled"
-            COLOR=16776988
-          elif [ "$JOB_STATUS" = "skipped" ]; then
-            TITLE="⏭️ [BE / ${ENV_NAME}] CI Skipped"
-            COLOR=9807270
-          else
-            TITLE="❌ [BE / ${ENV_NAME}] CD Failed"
-            COLOR=15548997
-          fi
-
-
-          # 개행 문자 및 따옴표 제거, 200자로 자름
-          safe_msg=$(echo "$MESSAGE" | tr '\n' ' ' | sed 's/"/\\"/g' | head -c 200)
-
-          # 동일 배포 처리
-          if [ "$SKIP" = "true" ]; then
-            TITLE="⏭️ [BE / ${ENV_NAME}] CD Skipped due to same Version"
-            COLOR=9807270
-          fi
-
-
-          JSON_PAYLOAD=$(cat <<JSON
-          {
-            "embeds": [
-              {
-                "title": "$TITLE",
-                "url": "$RUN_URL",
-                "color": $COLOR,
-                "description": "${safe_msg}",
-                "fields": [
-                  {"name":"Release ID","value":"\`${RELEASE_ID}\`","inline":false},
-
-                  {"name":"Actor","value":"${ACTOR}","inline":true},
-                  {"name":"Branch","value":"${BRANCH}","inline":true},
-                  {"name":"Total CD","value":"${cd_total}s","inline":true},
-
-                  {"name":"Compose Upload","value":"${S3_OUTCOME}","inline":true},
-                  {"name":"SSM Update","value":"${SSM_OUTCOME}","inline":true},
-                  {"name":"Instance Refresh","value":"${DEPLOY_OUTCOME}","inline":true}
-                ],
-                "timestamp": "$TIMESTAMP"
-              }
-            ]
-          }
-          JSON
-          )
-
-          curl -sS -X POST -H "Content-Type: application/json" --data-binary "$JSON_PAYLOAD" "$WEBHOOK" || true
+          cd manifest
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ env.MANIFEST_PATH }}
+          git commit -m "deploy: be image ${{ env.RELEASE_ID }}"
+          git push
