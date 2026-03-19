@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
+import org.redisson.codec.TypedJsonJacksonCodec;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RedisChatHistoryStore implements ChatHistoryStore {
 
     private static final String KEY_PREFIX = "chat:history:";
+    private static final TypedJsonJacksonCodec HISTORY_CODEC =
+            new TypedJsonJacksonCodec(ChatHistoryMessage.class);
 
     private final RedissonClient redissonClient;
 
@@ -20,13 +23,13 @@ public class RedisChatHistoryStore implements ChatHistoryStore {
 
     @Override
     public List<ChatHistoryMessage> findAll(String conversationId) {
-        RList<ChatHistoryMessage> list = redissonClient.getList(key(conversationId));
+        RList<ChatHistoryMessage> list = redissonClient.getList(key(conversationId), HISTORY_CODEC);
         return new ArrayList<>(list.readAll());
     }
 
     @Override
     public void append(String conversationId, ChatHistoryMessage message, Duration ttl) {
-        RList<ChatHistoryMessage> list = redissonClient.getList(key(conversationId));
+        RList<ChatHistoryMessage> list = redissonClient.getList(key(conversationId), HISTORY_CODEC);
         list.add(message);
         list.expire(ttl);
     }
