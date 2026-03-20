@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
@@ -74,12 +75,32 @@ public class PersonalRankingService {
         }
 
         if (shouldReadSummaryFromZset(periodType)) {
-            return loadSummaryFromZset(userId, periodType, dto.getPeriodValue(), regionId);
+            return getCachedOrLoadSummary(
+                    periodType,
+                    dto.getPeriodValue(),
+                    regionId,
+                    userId,
+                    () -> loadSummaryFromZset(userId, periodType, dto.getPeriodValue(), regionId)
+            );
         }
 
+        return getCachedOrLoadSummary(
+                periodType,
+                dto.getPeriodValue(),
+                regionId,
+                userId,
+                () -> loadSummaryFromDb(userId, periodType, dto.getPeriodValue(), regionId)
+        );
+    }
+
+    private PersonalRankingSummaryResponse getCachedOrLoadSummary(RankingPeriodType periodType,
+                                                                  String periodValue,
+                                                                  Long regionId,
+                                                                  Long userId,
+                                                                  Supplier<PersonalRankingSummaryResponse> loader) {
         Optional<PersonalRankingSummaryResponse> cached = rankingPersonalCacheStore.getSummary(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 userId
         );
@@ -89,18 +110,19 @@ public class PersonalRankingService {
 
         String inflightKey = rankingPersonalCacheStore.buildSummaryKey(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 userId
         );
-        return loadSummaryWithSingleFlight(inflightKey, userId, periodType, dto.getPeriodValue(), regionId);
+        return loadSummaryWithSingleFlight(inflightKey, periodType, periodValue, regionId, userId, loader);
     }
 
     private PersonalRankingSummaryResponse loadSummaryWithSingleFlight(String inflightKey,
-                                                                       Long userId,
                                                                        RankingPeriodType periodType,
                                                                        String periodValue,
-                                                                       Long regionId) {
+                                                                       Long regionId,
+                                                                       Long userId,
+                                                                       Supplier<PersonalRankingSummaryResponse> loader) {
         while (true) {
             CompletableFuture<PersonalRankingSummaryResponse> existing = summaryInFlight.get(inflightKey);
             if (existing != null) {
@@ -110,7 +132,7 @@ public class PersonalRankingService {
             CompletableFuture<PersonalRankingSummaryResponse> created = new CompletableFuture<>();
             if (summaryInFlight.putIfAbsent(inflightKey, created) == null) {
                 try {
-                    PersonalRankingSummaryResponse response = loadSummaryFromDb(userId, periodType, periodValue, regionId);
+                    PersonalRankingSummaryResponse response = loader.get();
                     rankingPersonalCacheStore.putSummary(periodType.name(), periodValue, regionId, userId, response);
                     created.complete(response);
                     return response;
@@ -251,12 +273,38 @@ public class PersonalRankingService {
         int limit = rankingRequestValidator.resolveLimit(cursorRequest);
 
         if (shouldReadSummaryFromZset(periodType)) {
+            if (isZsetListCacheTarget(cursor)) {
+                return getCachedOrLoadList(
+                        periodType,
+                        dto.getPeriodValue(),
+                        regionId,
+                        cursor,
+                        limit,
+                        () -> loadListFromZset(periodType, dto.getPeriodValue(), regionId, cursor, limit)
+                );
+            }
             return loadListFromZset(periodType, dto.getPeriodValue(), regionId, cursor, limit);
         }
 
+        return getCachedOrLoadList(
+                periodType,
+                dto.getPeriodValue(),
+                regionId,
+                cursor,
+                limit,
+                () -> loadListFromDb(periodType, dto.getPeriodValue(), regionId, cursor, limit)
+        );
+    }
+
+    private PersonalRankingListResponse getCachedOrLoadList(RankingPeriodType periodType,
+                                                            String periodValue,
+                                                            Long regionId,
+                                                            String cursor,
+                                                            int limit,
+                                                            Supplier<PersonalRankingListResponse> loader) {
         Optional<PersonalRankingListResponse> cached = rankingPersonalCacheStore.getList(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 cursor,
                 limit
@@ -267,12 +315,12 @@ public class PersonalRankingService {
 
         String inflightKey = rankingPersonalCacheStore.buildListKey(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 cursor,
                 limit
         );
-        return loadListWithSingleFlight(inflightKey, periodType, dto.getPeriodValue(), regionId, cursor, limit);
+        return loadListWithSingleFlight(inflightKey, periodType, periodValue, regionId, cursor, limit, loader);
     }
 
     private PersonalRankingListResponse loadListWithSingleFlight(String inflightKey,
@@ -280,7 +328,8 @@ public class PersonalRankingService {
                                                                  String periodValue,
                                                                  Long regionId,
                                                                  String cursor,
-                                                                 int limit) {
+                                                                 int limit,
+                                                                 Supplier<PersonalRankingListResponse> loader) {
         while (true) {
             CompletableFuture<PersonalRankingListResponse> existing = listInFlight.get(inflightKey);
             if (existing != null) {
@@ -290,7 +339,7 @@ public class PersonalRankingService {
             CompletableFuture<PersonalRankingListResponse> created = new CompletableFuture<>();
             if (listInFlight.putIfAbsent(inflightKey, created) == null) {
                 try {
-                    PersonalRankingListResponse response = loadListFromDb(periodType, periodValue, regionId, cursor, limit);
+                    PersonalRankingListResponse response = loader.get();
                     rankingPersonalCacheStore.putList(periodType.name(), periodValue, regionId, cursor, limit, response);
                     created.complete(response);
                     return response;
@@ -400,6 +449,10 @@ public class PersonalRankingService {
         return rankingZsetProperties.isEnabled()
                 && periodType == RankingPeriodType.WEEK
                 && "zset".equalsIgnoreCase(rankingZsetProperties.getReadSource());
+    }
+
+    private boolean isZsetListCacheTarget(String cursor) {
+        return cursor == null || cursor.isBlank();
     }
 
     private List<Long> parseDogIds(List<ScoredEntry<String>> entries, int sizeLimit) {

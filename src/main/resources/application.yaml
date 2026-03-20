@@ -202,6 +202,8 @@ cache:
     key-version: ${CACHE_BLOCK_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
   ranking:
     personal:
+      ttl-seconds: ${CACHE_RANKING_PERSONAL_TTL_SECONDS:30}
+      jitter-percent: ${CACHE_RANKING_PERSONAL_JITTER_PERCENT:0}
       summary-key: ${CACHE_RANKING_PERSONAL_SUMMARY_KEY:cache:rankings:dogs:summary}
       list-key: ${CACHE_RANKING_PERSONAL_LIST_KEY:cache:rankings:dogs:list}
       key-version: ${CACHE_RANKING_PERSONAL_KEY_VERSION:${CACHE_DEFAULT_KEY_VERSION:v2}}
@@ -228,3 +230,9 @@ management:
     metrics:
       export:
         enabled: true
+  metrics:
+    distribution:
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
+      percentiles-histogram:
+        http.server.requests: true
