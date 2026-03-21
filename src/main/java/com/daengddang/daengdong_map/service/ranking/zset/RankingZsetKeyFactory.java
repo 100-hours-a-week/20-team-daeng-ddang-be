@@ -20,6 +20,10 @@ public class RankingZsetKeyFactory {
         return prefix() + SEP + "dog" + SEP + "region" + SEP + regionId + SEP + periodType.name() + SEP + periodValue;
     }
 
+    public String regionKey(RankingPeriodType periodType, String periodValue) {
+        return prefix() + SEP + "region" + SEP + periodType.name() + SEP + periodValue;
+    }
+
     public String dogMetaNameMapKey() {
         return prefix() + SEP + "meta" + SEP + "dog" + SEP + "name";
     }
