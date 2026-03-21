@@ -28,8 +28,10 @@ public class AccessValidator {
     }
 
     public Dog getDogOrThrow(Long userId) {
-        User user = getUserOrThrow(userId);
-        return dogRepository.findByUser(user)
+        if (userId == null) {
+            throw new BaseException(ErrorCode.UNAUTHORIZED);
+        }
+        return dogRepository.findActiveByUserId(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND));
     }
 
@@ -37,11 +39,7 @@ public class AccessValidator {
         if (userId == null) {
             throw new BaseException(ErrorCode.UNAUTHORIZED);
         }
-        Walk walk = walkRepository.findById(walkId)
+        return walkRepository.findOwnedWalkByIdAndUserId(walkId, userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.WALK_RECORD_NOT_FOUND));
-        if (!userId.equals(walk.getDog().getUser().getId())) {
-            throw new BaseException(ErrorCode.FORBIDDEN);
-        }
-        return walk;
     }
 }

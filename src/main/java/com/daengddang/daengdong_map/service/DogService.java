@@ -14,6 +14,7 @@ import com.daengddang.daengdong_map.repository.DogRepository;
 import com.daengddang.daengdong_map.service.cache.RankingRegionContributionCacheStore;
 import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
 import com.daengddang.daengdong_map.service.cache.RankingRegionSummaryCacheStore;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingDogMetaCacheService;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class DogService {
     private final RankingPersonalCacheStore rankingPersonalCacheStore;
     private final RankingRegionSummaryCacheStore rankingRegionSummaryCacheStore;
     private final RankingRegionContributionCacheStore rankingRegionContributionCacheStore;
+    private final RankingDogMetaCacheService rankingDogMetaCacheService;
 
     @Transactional
     public DogRegisterResponse registerDog(Long userId, DogRegisterRequest dto) {
@@ -45,6 +47,7 @@ public class DogService {
         Dog dog = DogRegisterRequest.of(dto, user, breed);
 
         Dog saved = dogRepository.save(dog);
+        rankingDogMetaCacheService.upsert(saved);
 
         return DogRegisterResponse.from(saved.getId(), saved.getDogKey());
     }
@@ -72,6 +75,7 @@ public class DogService {
                 .orElseThrow(() -> new BaseException(ErrorCode.DOG_BREED_NOT_FOUND));
 
         DogUpdateRequest.of(dto, dog, breed);
+        rankingDogMetaCacheService.upsert(dog);
         long personalDeleted = rankingPersonalCacheStore.evictAll();
         long regionDeleted = rankingRegionSummaryCacheStore.evictAll();
         long contributionDeleted = rankingRegionContributionCacheStore.evictAll();

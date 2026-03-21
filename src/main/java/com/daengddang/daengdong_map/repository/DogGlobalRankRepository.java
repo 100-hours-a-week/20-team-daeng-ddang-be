@@ -2,6 +2,7 @@ package com.daengddang.daengdong_map.repository;
 
 import com.daengddang.daengdong_map.domain.ranking.DogGlobalRank;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
+import com.daengddang.daengdong_map.repository.projection.DogDistanceScoreView;
 import com.daengddang.daengdong_map.repository.projection.DogRankView;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface DogGlobalRankRepository extends JpaRepository<DogGlobalRank, Long> {
+
+    @Query("""
+            select
+                rank.dog.id as dogId,
+                rank.totalDistance as totalDistance
+            from DogGlobalRank rank
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+            """)
+    List<DogDistanceScoreView> findScoresByPeriod(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue
+    );
 
     @Query("""
             select

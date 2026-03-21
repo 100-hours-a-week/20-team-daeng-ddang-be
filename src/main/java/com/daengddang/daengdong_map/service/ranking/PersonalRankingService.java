@@ -12,16 +12,31 @@ import com.daengddang.daengdong_map.repository.DogRankRepository;
 import com.daengddang.daengdong_map.repository.projection.DogRankView;
 import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheMetrics;
 import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingDogMetaCacheService;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetKeyFactory;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetProperties;
 import com.daengddang.daengdong_map.util.AccessValidator;
 import com.daengddang.daengdong_map.util.RankingCursorCodec;
 import com.daengddang.daengdong_map.util.RankingRequestValidator;
 import com.daengddang.daengdong_map.util.RegionValidator;
 import com.daengddang.daengdong_map.util.RankingValidator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RBatch;
+import org.redisson.api.RFuture;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RScoredSortedSetAsync;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +50,7 @@ public class PersonalRankingService {
 
     private final DogGlobalRankRepository dogGlobalRankRepository;
     private final DogRankRepository dogRankRepository;
+    private final RankingDogMetaCacheService rankingDogMetaCacheService;
     private final CursorPagingSupport cursorPagingSupport;
     private final RankingRequestValidator rankingRequestValidator;
     private final RankingCursorCodec rankingCursorCodec;
@@ -42,6 +58,9 @@ public class PersonalRankingService {
     private final AccessValidator accessValidator;
     private final RankingPersonalCacheStore rankingPersonalCacheStore;
     private final RankingPersonalCacheMetrics rankingPersonalCacheMetrics;
+    private final RankingZsetProperties rankingZsetProperties;
+    private final RankingZsetKeyFactory rankingZsetKeyFactory;
+    private final RedissonClient redissonClient;
     private final ConcurrentHashMap<String, CompletableFuture<PersonalRankingSummaryResponse>> summaryInFlight =
             new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CompletableFuture<PersonalRankingListResponse>> listInFlight =
@@ -51,10 +70,37 @@ public class PersonalRankingService {
         rankingRequestValidator.validateRequestNotNull(dto);
         RankingPeriodType periodType = rankingRequestValidator.parseAndValidatePeriod(dto.getPeriodType(), dto.getPeriodValue());
         Long regionId = dto.getRegionId();
+        if (regionId != null) {
+            regionValidator.validateActiveRegion(regionId);
+        }
 
+        if (shouldReadSummaryFromZset(periodType)) {
+            return getCachedOrLoadSummary(
+                    periodType,
+                    dto.getPeriodValue(),
+                    regionId,
+                    userId,
+                    () -> loadSummaryFromZset(userId, periodType, dto.getPeriodValue(), regionId)
+            );
+        }
+
+        return getCachedOrLoadSummary(
+                periodType,
+                dto.getPeriodValue(),
+                regionId,
+                userId,
+                () -> loadSummaryFromDb(userId, periodType, dto.getPeriodValue(), regionId)
+        );
+    }
+
+    private PersonalRankingSummaryResponse getCachedOrLoadSummary(RankingPeriodType periodType,
+                                                                  String periodValue,
+                                                                  Long regionId,
+                                                                  Long userId,
+                                                                  Supplier<PersonalRankingSummaryResponse> loader) {
         Optional<PersonalRankingSummaryResponse> cached = rankingPersonalCacheStore.getSummary(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 userId
         );
@@ -64,18 +110,19 @@ public class PersonalRankingService {
 
         String inflightKey = rankingPersonalCacheStore.buildSummaryKey(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 userId
         );
-        return loadSummaryWithSingleFlight(inflightKey, userId, periodType, dto.getPeriodValue(), regionId);
+        return loadSummaryWithSingleFlight(inflightKey, periodType, periodValue, regionId, userId, loader);
     }
 
     private PersonalRankingSummaryResponse loadSummaryWithSingleFlight(String inflightKey,
-                                                                       Long userId,
                                                                        RankingPeriodType periodType,
                                                                        String periodValue,
-                                                                       Long regionId) {
+                                                                       Long regionId,
+                                                                       Long userId,
+                                                                       Supplier<PersonalRankingSummaryResponse> loader) {
         while (true) {
             CompletableFuture<PersonalRankingSummaryResponse> existing = summaryInFlight.get(inflightKey);
             if (existing != null) {
@@ -85,7 +132,7 @@ public class PersonalRankingService {
             CompletableFuture<PersonalRankingSummaryResponse> created = new CompletableFuture<>();
             if (summaryInFlight.putIfAbsent(inflightKey, created) == null) {
                 try {
-                    PersonalRankingSummaryResponse response = loadSummaryFromDb(userId, periodType, periodValue, regionId);
+                    PersonalRankingSummaryResponse response = loader.get();
                     rankingPersonalCacheStore.putSummary(periodType.name(), periodValue, regionId, userId, response);
                     created.complete(response);
                     return response;
@@ -140,6 +187,78 @@ public class PersonalRankingService {
         return PersonalRankingSummaryResponse.of(topRanks, myRank);
     }
 
+    private PersonalRankingSummaryResponse loadSummaryFromZset(Long userId,
+                                                               RankingPeriodType periodType,
+                                                               String periodValue,
+                                                               Long regionId) {
+        try {
+            Dog myDog = userId != null ? accessValidator.getDogOrThrow(userId) : null;
+            Long myDogId = myDog == null ? null : myDog.getId();
+
+            String key = regionId == null
+                    ? rankingZsetKeyFactory.dogGlobalKey(periodType, periodValue)
+                    : rankingZsetKeyFactory.dogRegionKey(regionId, periodType, periodValue);
+            RBatch batch = redissonClient.createBatch();
+            RScoredSortedSetAsync<String> zsetAsync = batch.getScoredSortedSet(key, StringCodec.INSTANCE);
+            RFuture<Collection<ScoredEntry<String>>> topEntriesFuture =
+                    zsetAsync.entryRangeReversedAsync(0, SUMMARY_TOP_LIMIT - 1);
+            RFuture<Integer> revRankFuture = null;
+            RFuture<Double> scoreFuture = null;
+            if (myDogId != null) {
+                String myDogIdString = String.valueOf(myDogId);
+                revRankFuture = zsetAsync.revRankAsync(myDogIdString);
+                scoreFuture = zsetAsync.getScoreAsync(myDogIdString);
+            }
+            batch.execute();
+
+            Collection<ScoredEntry<String>> fetchedTopEntries = topEntriesFuture.getNow();
+            List<ScoredEntry<String>> topEntries = fetchedTopEntries == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(fetchedTopEntries);
+            Integer revRank = revRankFuture == null ? null : revRankFuture.getNow();
+            Double myScoreFromBatch = scoreFuture == null ? null : scoreFuture.getNow();
+
+            List<Long> parsedTopDogIds = parseDogIds(topEntries, topEntries.size());
+            LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
+            for (Long dogId : parsedTopDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
+                }
+            }
+            if (myDogId != null) {
+                dogIds.add(myDogId);
+            }
+
+            Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
+            List<PersonalRankItemResponse> topRanks =
+                    buildRankItemsFromEntries(topEntries, parsedTopDogIds, dogById, 1, topEntries.size());
+
+            PersonalRankItemResponse myRank = null;
+            if (myDogId != null && revRank != null) {
+                RankingDogMetaCacheService.DogMeta dog = dogById.get(myDogId);
+                if (dog != null) {
+                    Double score = findScoreInEntries(topEntries, myDogId);
+                    if (score == null) {
+                        score = myScoreFromBatch;
+                    }
+                    myRank = PersonalRankItemResponse.of(
+                            revRank + 1,
+                            myDogId,
+                            dog.name(),
+                            dog.birthDate(),
+                            dog.profileImageUrl(),
+                            dog.breed(),
+                            score == null ? 0.0 : score
+                    );
+                }
+            }
+
+            return PersonalRankingSummaryResponse.of(topRanks, myRank);
+        } catch (Exception e) {
+            return loadSummaryFromDb(userId, periodType, periodValue, regionId);
+        }
+    }
+
     public PersonalRankingListResponse getPersonalRankingList(Long userId,
                                                               RankingPeriodRegionRequest dto,
                                                               RankingCursorRequest cursorRequest) {
@@ -153,9 +272,39 @@ public class PersonalRankingService {
         String cursor = rankingRequestValidator.resolveCursor(cursorRequest);
         int limit = rankingRequestValidator.resolveLimit(cursorRequest);
 
+        if (shouldReadSummaryFromZset(periodType)) {
+            if (isZsetListCacheTarget(cursor)) {
+                return getCachedOrLoadList(
+                        periodType,
+                        dto.getPeriodValue(),
+                        regionId,
+                        cursor,
+                        limit,
+                        () -> loadListFromZset(periodType, dto.getPeriodValue(), regionId, cursor, limit)
+                );
+            }
+            return loadListFromZset(periodType, dto.getPeriodValue(), regionId, cursor, limit);
+        }
+
+        return getCachedOrLoadList(
+                periodType,
+                dto.getPeriodValue(),
+                regionId,
+                cursor,
+                limit,
+                () -> loadListFromDb(periodType, dto.getPeriodValue(), regionId, cursor, limit)
+        );
+    }
+
+    private PersonalRankingListResponse getCachedOrLoadList(RankingPeriodType periodType,
+                                                            String periodValue,
+                                                            Long regionId,
+                                                            String cursor,
+                                                            int limit,
+                                                            Supplier<PersonalRankingListResponse> loader) {
         Optional<PersonalRankingListResponse> cached = rankingPersonalCacheStore.getList(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 cursor,
                 limit
@@ -166,12 +315,12 @@ public class PersonalRankingService {
 
         String inflightKey = rankingPersonalCacheStore.buildListKey(
                 periodType.name(),
-                dto.getPeriodValue(),
+                periodValue,
                 regionId,
                 cursor,
                 limit
         );
-        return loadListWithSingleFlight(inflightKey, periodType, dto.getPeriodValue(), regionId, cursor, limit);
+        return loadListWithSingleFlight(inflightKey, periodType, periodValue, regionId, cursor, limit, loader);
     }
 
     private PersonalRankingListResponse loadListWithSingleFlight(String inflightKey,
@@ -179,7 +328,8 @@ public class PersonalRankingService {
                                                                  String periodValue,
                                                                  Long regionId,
                                                                  String cursor,
-                                                                 int limit) {
+                                                                 int limit,
+                                                                 Supplier<PersonalRankingListResponse> loader) {
         while (true) {
             CompletableFuture<PersonalRankingListResponse> existing = listInFlight.get(inflightKey);
             if (existing != null) {
@@ -189,7 +339,7 @@ public class PersonalRankingService {
             CompletableFuture<PersonalRankingListResponse> created = new CompletableFuture<>();
             if (listInFlight.putIfAbsent(inflightKey, created) == null) {
                 try {
-                    PersonalRankingListResponse response = loadListFromDb(periodType, periodValue, regionId, cursor, limit);
+                    PersonalRankingListResponse response = loader.get();
                     rankingPersonalCacheStore.putList(periodType.name(), periodValue, regionId, cursor, limit, response);
                     created.complete(response);
                     return response;
@@ -239,6 +389,50 @@ public class PersonalRankingService {
         return PersonalRankingListResponse.of(page.items(), page.nextCursor(), page.hasNext());
     }
 
+    private PersonalRankingListResponse loadListFromZset(RankingPeriodType periodType,
+                                                         String periodValue,
+                                                         Long regionId,
+                                                         String cursor,
+                                                         int limit) {
+        try {
+            String key = regionId == null
+                    ? rankingZsetKeyFactory.dogGlobalKey(periodType, periodValue)
+                    : rankingZsetKeyFactory.dogRegionKey(regionId, periodType, periodValue);
+            RScoredSortedSet<String> zset = redissonClient.getScoredSortedSet(key, StringCodec.INSTANCE);
+
+            int startIndex = 0;
+            if (cursor != null && !cursor.isBlank()) {
+                RankingValidator.RankDogCursor parsed = RankingValidator.parseRankDogCursor(cursor);
+                startIndex = Math.max(parsed.rank(), 0);
+            }
+
+            int endIndexWithExtra = Math.max(startIndex + limit, startIndex);
+            List<ScoredEntry<String>> entries = new ArrayList<>(zset.entryRangeReversed(startIndex, endIndexWithExtra));
+            boolean hasNext = entries.size() > limit;
+            int realSize = Math.min(entries.size(), limit);
+
+            LinkedHashSet<Long> dogIds = new LinkedHashSet<>();
+            List<Long> parsedDogIds = parseDogIds(entries, realSize);
+            for (Long dogId : parsedDogIds) {
+                if (dogId != null) {
+                    dogIds.add(dogId);
+                }
+            }
+            Map<Long, RankingDogMetaCacheService.DogMeta> dogById = rankingDogMetaCacheService.getByDogIds(dogIds);
+            List<PersonalRankItemResponse> ranks =
+                    buildRankItemsFromEntries(entries, parsedDogIds, dogById, startIndex + 1, realSize);
+
+            String nextCursor = null;
+            if (hasNext && !ranks.isEmpty()) {
+                PersonalRankItemResponse last = ranks.get(ranks.size() - 1);
+                nextCursor = rankingCursorCodec.toRankDogCursor(last.getRank(), last.getDogId());
+            }
+            return PersonalRankingListResponse.of(ranks, nextCursor, hasNext);
+        } catch (Exception e) {
+            return loadListFromDb(periodType, periodValue, regionId, cursor, limit);
+        }
+    }
+
     private PersonalRankItemResponse toPersonalRankItem(DogRankView view) {
         return PersonalRankItemResponse.of(
                 view.getRank(),
@@ -249,5 +443,80 @@ public class PersonalRankingService {
                 view.getDogBreed(),
                 view.getTotalDistance()
         );
+    }
+
+    private boolean shouldReadSummaryFromZset(RankingPeriodType periodType) {
+        return rankingZsetProperties.isEnabled()
+                && periodType == RankingPeriodType.WEEK
+                && "zset".equalsIgnoreCase(rankingZsetProperties.getReadSource());
+    }
+
+    private boolean isZsetListCacheTarget(String cursor) {
+        return cursor == null || cursor.isBlank();
+    }
+
+    private List<Long> parseDogIds(List<ScoredEntry<String>> entries, int sizeLimit) {
+        int realSize = Math.min(entries.size(), sizeLimit);
+        List<Long> dogIds = new ArrayList<>(realSize);
+        for (int i = 0; i < realSize; i++) {
+            dogIds.add(toLongOrNull(entries.get(i).getValue()));
+        }
+        return dogIds;
+    }
+
+    private List<PersonalRankItemResponse> buildRankItemsFromEntries(List<ScoredEntry<String>> entries,
+                                                                     List<Long> parsedDogIds,
+                                                                     Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
+                                                                     int baseRank,
+                                                                     int sizeLimit) {
+        int realSize = Math.min(entries.size(), sizeLimit);
+        List<PersonalRankItemResponse> items = new ArrayList<>(realSize);
+        for (int i = 0; i < realSize; i++) {
+            PersonalRankItemResponse item = toRankItem(entries.get(i), parsedDogIds.get(i), dogById, baseRank + i);
+            if (item != null) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    private PersonalRankItemResponse toRankItem(ScoredEntry<String> entry,
+                                                Long dogId,
+                                                Map<Long, RankingDogMetaCacheService.DogMeta> dogById,
+                                                int rank) {
+        if (dogId == null) {
+            return null;
+        }
+        RankingDogMetaCacheService.DogMeta dog = dogById.get(dogId);
+        if (dog == null) {
+            return null;
+        }
+        return PersonalRankItemResponse.of(
+                rank,
+                dogId,
+                dog.name(),
+                dog.birthDate(),
+                dog.profileImageUrl(),
+                dog.breed(),
+                entry.getScore() == null ? 0.0 : entry.getScore()
+        );
+    }
+
+    private Double findScoreInEntries(List<ScoredEntry<String>> entries, Long dogId) {
+        String dogIdString = String.valueOf(dogId);
+        for (ScoredEntry<String> entry : entries) {
+            if (dogIdString.equals(entry.getValue())) {
+                return entry.getScore();
+            }
+        }
+        return null;
+    }
+
+    private Long toLongOrNull(String value) {
+        try {
+            return Long.parseLong(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

@@ -51,6 +51,20 @@ public class ExternalAnalysisTaskStateService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markPendingForRetryIfRunning(String taskId, String errorCode, String errorMessage) {
+        int updated = externalAnalysisTaskRepository.markPendingForRetryIfRunning(
+                taskId,
+                ExternalAnalysisTaskStatus.RUNNING,
+                ExternalAnalysisTaskStatus.PENDING,
+                errorCode,
+                sanitizeErrorMessage(errorMessage)
+        );
+        if (updated > 0) {
+            eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markFail(String taskId, String errorCode, String errorMessage) {
         int updated = externalAnalysisTaskRepository.markFail(
                 taskId,

@@ -2,6 +2,8 @@ package com.daengddang.daengdong_map.repository;
 
 import com.daengddang.daengdong_map.domain.dog.Dog;
 import com.daengddang.daengdong_map.domain.user.User;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +13,23 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 
     Optional<Dog> findByUser(User user);
 
+    @Query("""
+            select dog
+            from Dog dog
+            join fetch dog.user user
+            where user.id = :userId
+            """)
+    Optional<Dog> findActiveByUserId(@Param("userId") Long userId);
+
     @Query(value = "select * from dogs where user_id = :userId", nativeQuery = true)
     Optional<Dog> findByUserIdIncludingDeleted(@Param("userId") Long userId);
+
+    @Query("""
+            select dog
+            from Dog dog
+            join fetch dog.breed
+            where dog.id in :dogIds
+            """)
+    List<Dog> findAllWithBreedByIdIn(@Param("dogIds") Collection<Long> dogIds);
 
 }

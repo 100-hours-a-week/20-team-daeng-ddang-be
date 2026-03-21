@@ -13,14 +13,11 @@ import com.daengddang.daengdong_map.dto.request.expression.ExpressionAnalyzeRequ
 import com.daengddang.daengdong_map.dto.request.healthcare.HealthcareAnalyzeRequest;
 import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskAcceptedResponse;
 import com.daengddang.daengdong_map.dto.response.task.AnalysisTaskDetailResponse;
-import com.daengddang.daengdong_map.event.ExternalAnalysisTaskCreatedEvent;
 import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import com.daengddang.daengdong_map.repository.MissionUploadRepository;
 import com.daengddang.daengdong_map.util.AccessValidator;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,22 +29,20 @@ public class ExternalAnalysisTaskService {
     private final AccessValidator accessValidator;
     private final MissionUploadRepository missionUploadRepository;
     private final ExternalAnalysisTaskRepository externalAnalysisTaskRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ExternalAnalysisTaskCreationService externalAnalysisTaskCreationService;
 
-    @Transactional
     public AnalysisTaskAcceptedResponse createMissionTask(Long userId, Long walkId) {
         analysisBackpressureGuard.validateOrThrow();
         Walk walk = accessValidator.getOwnedWalkOrThrow(userId, walkId);
         if (walk.getStatus() != WalkStatus.FINISHED) {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
-        if (missionUploadRepository.findAllByWalk(walk).isEmpty()) {
+        if (!missionUploadRepository.existsByWalk(walk)) {
             throw new BaseException(ErrorCode.RESOURCE_NOT_FOUND);
         }
         return createOrReuseWalkTask(walk, ExternalAnalysisTaskType.MISSION, null);
     }
 
-    @Transactional
     public AnalysisTaskAcceptedResponse createExpressionTask(Long userId, Long walkId, ExpressionAnalyzeRequest dto) {
         analysisBackpressureGuard.validateOrThrow();
         if (dto == null) {
@@ -57,7 +52,6 @@ public class ExternalAnalysisTaskService {
         return createOrReuseWalkTask(walk, ExternalAnalysisTaskType.EXPRESSION, dto.getVideoUrl());
     }
 
-    @Transactional
     public AnalysisTaskAcceptedResponse createHealthcareTask(Long userId, HealthcareAnalyzeRequest dto) {
         analysisBackpressureGuard.validateOrThrow();
         if (dto == null) {
@@ -89,21 +83,11 @@ public class ExternalAnalysisTaskService {
             String videoUrl
     ) {
         try {
-            ExternalAnalysisTask saved = externalAnalysisTaskRepository.saveAndFlush(
-                    ExternalAnalysisTask.builder()
-                            .taskId(UUID.randomUUID().toString())
-                            .type(type)
-                            .status(ExternalAnalysisTaskStatus.PENDING)
-                            .videoUrl(videoUrl)
-                            .walk(walk)
-                            .dog(walk.getDog())
-                            .build()
-            );
-            eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
+            ExternalAnalysisTask saved = externalAnalysisTaskCreationService.createWalkTask(walk, type, videoUrl);
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             ExternalAnalysisTask existing = externalAnalysisTaskRepository
-                    .findLatestActiveByWalkIdAndType(walk.getId(), type)
+                    .findLatestByWalkIdAndType(walk.getId(), type)
                     .orElseThrow(() -> ex);
             return AnalysisTaskAcceptedResponse.from(existing);
         }
@@ -115,20 +99,11 @@ public class ExternalAnalysisTaskService {
             String videoUrl
     ) {
         try {
-            ExternalAnalysisTask saved = externalAnalysisTaskRepository.saveAndFlush(
-                    ExternalAnalysisTask.builder()
-                            .taskId(UUID.randomUUID().toString())
-                            .type(type)
-                            .status(ExternalAnalysisTaskStatus.PENDING)
-                            .videoUrl(videoUrl)
-                            .dog(dog)
-                            .build()
-            );
-            eventPublisher.publishEvent(new ExternalAnalysisTaskCreatedEvent(saved.getTaskId(), saved.getType()));
+            ExternalAnalysisTask saved = externalAnalysisTaskCreationService.createDogTask(dog, type, videoUrl);
             return AnalysisTaskAcceptedResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             ExternalAnalysisTask existing = externalAnalysisTaskRepository
-                    .findLatestActiveByDogIdAndType(dog.getId(), type)
+                    .findLatestByDogIdAndType(dog.getId(), type)
                     .orElseThrow(() -> ex);
             return AnalysisTaskAcceptedResponse.from(existing);
         }

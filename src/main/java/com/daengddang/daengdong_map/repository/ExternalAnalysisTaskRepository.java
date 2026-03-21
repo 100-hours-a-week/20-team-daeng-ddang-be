@@ -18,6 +18,13 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     Optional<ExternalAnalysisTask> findByTaskId(String taskId);
 
+    @Query("""
+            select task.status
+              from ExternalAnalysisTask task
+             where task.taskId = :taskId
+            """)
+    Optional<ExternalAnalysisTaskStatus> findStatusByTaskId(@Param("taskId") String taskId);
+
     @EntityGraph(attributePaths = {"walk", "dog", "dog.user"})
     Optional<ExternalAnalysisTask> findWithContextByTaskId(String taskId);
 
@@ -27,6 +34,11 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     Optional<ExternalAnalysisTask> findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(
             Long walkId,
+            ExternalAnalysisTaskType type
+    );
+
+    Optional<ExternalAnalysisTask> findTopByDogIdAndTypeOrderByRequestedAtDescIdDesc(
+            Long dogId,
             ExternalAnalysisTaskType type
     );
 
@@ -51,6 +63,10 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
 
     default Optional<ExternalAnalysisTask> findLatestByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
         return findTopByWalkIdAndTypeOrderByRequestedAtDescIdDesc(walkId, type);
+    }
+
+    default Optional<ExternalAnalysisTask> findLatestByDogIdAndType(Long dogId, ExternalAnalysisTaskType type) {
+        return findTopByDogIdAndTypeOrderByRequestedAtDescIdDesc(dogId, type);
     }
 
     default Optional<ExternalAnalysisTask> findLatestActiveByWalkIdAndType(Long walkId, ExternalAnalysisTaskType type) {
@@ -142,6 +158,27 @@ public interface ExternalAnalysisTaskRepository extends JpaRepository<ExternalAn
             @Param("finishedAt") LocalDateTime finishedAt,
             @Param("resultType") String resultType,
             @Param("resultId") String resultId
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update ExternalAnalysisTask task
+               set task.status = :pending,
+                   task.startedAt = null,
+                   task.finishedAt = null,
+                   task.errorCode = :errorCode,
+                   task.errorMessage = :errorMessage,
+                   task.resultType = null,
+                   task.resultId = null
+             where task.taskId = :taskId
+               and task.status = :running
+            """)
+    int markPendingForRetryIfRunning(
+            @Param("taskId") String taskId,
+            @Param("running") ExternalAnalysisTaskStatus running,
+            @Param("pending") ExternalAnalysisTaskStatus pending,
+            @Param("errorCode") String errorCode,
+            @Param("errorMessage") String errorMessage
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

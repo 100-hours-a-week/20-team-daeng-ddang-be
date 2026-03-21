@@ -3,6 +3,7 @@ package com.daengddang.daengdong_map.repository;
 import com.daengddang.daengdong_map.domain.ranking.DogRank;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.repository.projection.DogRankView;
+import com.daengddang.daengdong_map.repository.projection.RegionDogDistanceScoreView;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface DogRankRepository extends JpaRepository<DogRank, Long> {
+
+    @Query("""
+            select
+                rank.region.id as regionId,
+                rank.dog.id as dogId,
+                rank.totalDistance as totalDistance
+            from DogRank rank
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+            """)
+    List<RegionDogDistanceScoreView> findScoresByPeriod(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue
+    );
 
     @Query("""
             select

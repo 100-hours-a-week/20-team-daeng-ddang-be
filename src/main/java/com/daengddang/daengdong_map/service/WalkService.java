@@ -21,6 +21,11 @@ import com.daengddang.daengdong_map.util.WalkRuntimeStateRegistry;
 import com.daengddang.daengdong_map.util.WalkMetricsValidator;
 import com.daengddang.daengdong_map.repository.WalkPointRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
+import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
+import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
+import com.daengddang.daengdong_map.service.ranking.batch.PeriodRange;
+import com.daengddang.daengdong_map.service.ranking.batch.RankingPeriodResolver;
+import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetRealtimeUpdater;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +44,9 @@ public class WalkService {
     private final WalkBlockLogRepository walkBlockLogRepository;
     private final AccessValidator accessValidator;
     private final WalkRuntimeStateRegistry stateRegistry;
+    private final RankingZsetRealtimeUpdater rankingZsetRealtimeUpdater;
+    private final RankingPersonalCacheStore rankingPersonalCacheStore;
+    private final RankingPeriodResolver rankingPeriodResolver;
 
     @Transactional
     public WalkStartResponse startWalk(Long userId, WalkStartRequest dto) {
@@ -104,6 +112,9 @@ public class WalkService {
             removeBlocksAcquiredInWalk(walk.getId());
         }
 
+        rankingZsetRealtimeUpdater.addDistanceForFinishedWalk(dog, storedDistanceMeters);
+        evictCurrentWeekPersonalRankingCache();
+
         stateRegistry.clear(walk.getId());
 
         int occupiedBlockCount = Math.toIntExact(blockOwnershipRepository.countByDog(dog));
@@ -161,5 +172,11 @@ public class WalkService {
         if (!blocksToDelete.isEmpty()) {
             blockOwnershipRepository.deleteAllByIdInBatch(blocksToDelete);
         }
+    }
+
+    private void evictCurrentWeekPersonalRankingCache() {
+        PeriodRange weekRange = rankingPeriodResolver.resolveCurrentPeriodRange(RankingPeriodType.WEEK);
+        String weekPeriodValue = rankingPeriodResolver.resolvePeriodValue(RankingPeriodType.WEEK, weekRange);
+        rankingPersonalCacheStore.evictPeriod(RankingPeriodType.WEEK.name(), weekPeriodValue);
     }
 }
