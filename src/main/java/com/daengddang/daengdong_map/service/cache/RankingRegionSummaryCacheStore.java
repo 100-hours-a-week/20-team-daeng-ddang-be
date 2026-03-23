@@ -171,6 +171,40 @@ public class RankingRegionSummaryCacheStore {
         }
     }
 
+    public long evictPeriod(String periodType, String periodValue) {
+        if (!isEnabled()) {
+            return 0L;
+        }
+
+        try {
+            String safePeriodType = safe(periodType);
+            String safePeriodValue = safe(periodValue);
+            String summaryPattern = resolvePrefix(properties.getSummaryKey())
+                    + ":" + safePeriodType
+                    + ":" + safePeriodValue
+                    + ":*";
+            String listPattern = resolvePrefix(properties.getListKey())
+                    + ":" + safePeriodType
+                    + ":" + safePeriodValue
+                    + ":*";
+            List<String> keys = new ArrayList<>();
+            redissonClient.getKeys().getKeysByPattern(summaryPattern).forEach(keys::add);
+            redissonClient.getKeys().getKeysByPattern(listPattern).forEach(keys::add);
+            if (keys.isEmpty()) {
+                return 0L;
+            }
+            return redissonClient.getKeys().delete(keys.toArray(String[]::new));
+        } catch (Exception e) {
+            log.warn(
+                    "지역 랭킹 기간 캐시 무효화 실패 (Region ranking period cache eviction failed). periodType={}, periodValue={}",
+                    periodType,
+                    periodValue,
+                    e
+            );
+            return 0L;
+        }
+    }
+
     private long resolveTtlSeconds() {
         long base = properties.getTtlSeconds() == null
                 ? defaultProperties.getTtlSeconds()

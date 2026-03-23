@@ -23,6 +23,7 @@ import com.daengddang.daengdong_map.repository.WalkPointRepository;
 import com.daengddang.daengdong_map.repository.WalkRepository;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.service.cache.RankingPersonalCacheStore;
+import com.daengddang.daengdong_map.service.cache.RankingRegionSummaryCacheStore;
 import com.daengddang.daengdong_map.service.ranking.batch.PeriodRange;
 import com.daengddang.daengdong_map.service.ranking.batch.RankingPeriodResolver;
 import com.daengddang.daengdong_map.service.ranking.zset.RankingZsetRealtimeUpdater;
@@ -46,6 +47,7 @@ public class WalkService {
     private final WalkRuntimeStateRegistry stateRegistry;
     private final RankingZsetRealtimeUpdater rankingZsetRealtimeUpdater;
     private final RankingPersonalCacheStore rankingPersonalCacheStore;
+    private final RankingRegionSummaryCacheStore rankingRegionSummaryCacheStore;
     private final RankingPeriodResolver rankingPeriodResolver;
 
     @Transactional
@@ -114,6 +116,7 @@ public class WalkService {
 
         rankingZsetRealtimeUpdater.addDistanceForFinishedWalk(dog, storedDistanceMeters);
         evictCurrentWeekPersonalRankingCache();
+        evictCurrentWeekRegionRankingCache();
 
         stateRegistry.clear(walk.getId());
 
@@ -178,5 +181,11 @@ public class WalkService {
         PeriodRange weekRange = rankingPeriodResolver.resolveCurrentPeriodRange(RankingPeriodType.WEEK);
         String weekPeriodValue = rankingPeriodResolver.resolvePeriodValue(RankingPeriodType.WEEK, weekRange);
         rankingPersonalCacheStore.evictPeriod(RankingPeriodType.WEEK.name(), weekPeriodValue);
+    }
+
+    private void evictCurrentWeekRegionRankingCache() {
+        PeriodRange weekRange = rankingPeriodResolver.resolveCurrentPeriodRange(RankingPeriodType.WEEK);
+        String weekPeriodValue = rankingPeriodResolver.resolvePeriodValue(RankingPeriodType.WEEK, weekRange);
+        rankingRegionSummaryCacheStore.evictPeriod(RankingPeriodType.WEEK.name(), weekPeriodValue);
     }
 }
