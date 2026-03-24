@@ -36,8 +36,10 @@ public class ExternalAnalysisTaskStateService {
                     taskId, ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING);
             eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
         } else {
-            log.warn("외부 분석 작업 상태 전이 실패. taskId={}, expectedStatus={}, targetStatus={}",
-                    taskId, ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING);
+            ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
+                    .orElse(null);
+            log.warn("외부 분석 작업 상태 전이 실패. taskId={}, expectedStatus={}, targetStatus={}, currentStatus={}",
+                    taskId, ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING, currentStatus);
         }
         return changed;
     }
@@ -67,7 +69,14 @@ public class ExternalAnalysisTaskStateService {
                 sanitizeErrorMessage(errorMessage)
         );
         if (updated > 0) {
+            log.info("외부 분석 작업 재시도 상태 전이 성공. taskId={}, from={}, to={}, errorCode={}",
+                    taskId, ExternalAnalysisTaskStatus.RUNNING, ExternalAnalysisTaskStatus.PENDING, errorCode);
             eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        } else {
+            ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
+                    .orElse(null);
+            log.warn("외부 분석 작업 재시도 상태 전이 실패. taskId={}, expectedStatus={}, targetStatus={}, currentStatus={}, errorCode={}",
+                    taskId, ExternalAnalysisTaskStatus.RUNNING, ExternalAnalysisTaskStatus.PENDING, currentStatus, errorCode);
         }
     }
 
@@ -82,7 +91,14 @@ public class ExternalAnalysisTaskStateService {
                 sanitizeErrorMessage(errorMessage)
         );
         if (updated > 0) {
+            log.info("외부 분석 작업 실패 상태 전이 성공. taskId={}, to={}, errorCode={}",
+                    taskId, ExternalAnalysisTaskStatus.FAIL, errorCode);
             eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        } else {
+            ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
+                    .orElse(null);
+            log.warn("외부 분석 작업 실패 상태 전이 실패. taskId={}, targetStatus={}, currentStatus={}, errorCode={}",
+                    taskId, ExternalAnalysisTaskStatus.FAIL, currentStatus, errorCode);
         }
     }
 
