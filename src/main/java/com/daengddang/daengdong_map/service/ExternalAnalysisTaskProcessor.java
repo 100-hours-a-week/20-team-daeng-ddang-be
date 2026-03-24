@@ -52,6 +52,7 @@ public class ExternalAnalysisTaskProcessor {
 
     public void processOrThrow(String taskId) {
         Instant startedAt = Instant.now();
+        log.info("외부 분석 작업 조회 시작. taskId={}", taskId);
         ExternalAnalysisTask task = externalAnalysisTaskRepository.findWithContextByTaskId(taskId)
                 .orElse(null);
         if (task == null) {
@@ -70,6 +71,8 @@ public class ExternalAnalysisTaskProcessor {
                 task.getType(),
                 millisBetween(task.getRequestedAt(), LocalDateTime.now()),
                 task.getStatus());
+        log.info("외부 분석 작업 RUNNING 전환 시도. taskId={}, type={}, requestedAt={}, currentStatus={}",
+                taskId, task.getType(), task.getRequestedAt(), task.getStatus());
 
         if (!externalAnalysisTaskStateService.markRunningIfPending(taskId)) {
             ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
@@ -94,6 +97,7 @@ public class ExternalAnalysisTaskProcessor {
             }
         }
 
+        log.info("외부 분석 작업 RUNNING 전환 후 실행 진입. taskId={}, type={}", taskId, task.getType());
         TaskResultRef resultRef = execute(task);
         externalAnalysisTaskStateService.markSuccessIfRunning(taskId, resultRef.resultType(), resultRef.resultId());
         log.info("외부 분석 작업 처리 성공. taskId={}, type={}, durationMs={}, resultType={}, resultId={}",

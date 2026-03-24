@@ -49,6 +49,8 @@ public class AnalysisTaskRabbitConsumer {
                 brokerDelayMs);
 
         try {
+            log.info("분석 작업 메시지 처리 위임 시작. taskId={}, type={}, traceId={}, retryCount={}",
+                    message.taskId(), message.type(), message.traceId(), retryCount);
             externalAnalysisTaskProcessor.processOrThrow(message.taskId());
             analysisTaskRabbitMetrics.recordConsumeSuccess(Duration.between(startedAt, Instant.now()));
             log.info("분석 작업 메시지 처리 완료. taskId={}, type={}, traceId={}",
