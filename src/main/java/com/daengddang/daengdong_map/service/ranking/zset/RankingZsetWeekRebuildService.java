@@ -3,7 +3,9 @@ package com.daengddang.daengdong_map.service.ranking.zset;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
 import com.daengddang.daengdong_map.repository.DogGlobalRankRepository;
 import com.daengddang.daengdong_map.repository.DogRankRepository;
+import com.daengddang.daengdong_map.repository.RegionRankRepository;
 import com.daengddang.daengdong_map.repository.projection.DogDistanceScoreView;
+import com.daengddang.daengdong_map.repository.projection.RegionDistanceScoreView;
 import com.daengddang.daengdong_map.repository.projection.RegionDogDistanceScoreView;
 import com.daengddang.daengdong_map.service.ranking.batch.PeriodRange;
 import com.daengddang.daengdong_map.service.ranking.batch.RankingPeriodResolver;
@@ -34,6 +36,7 @@ public class RankingZsetWeekRebuildService {
     private final RedissonClient redissonClient;
     private final DogGlobalRankRepository dogGlobalRankRepository;
     private final DogRankRepository dogRankRepository;
+    private final RegionRankRepository regionRankRepository;
 
     public void rebuildCurrentWeek() {
         if (!properties.isEnabled()) {
@@ -72,13 +75,25 @@ public class RankingZsetWeekRebuildService {
                 regionMemberCount += memberCount;
             }
 
+            List<RegionDistanceScoreView> regionRankScores = regionRankRepository.findScoresByPeriod(
+                    RankingPeriodType.WEEK,
+                    periodValue
+            );
+            long regionRankingCount = replaceScores(
+                    keyFactory.regionKey(RankingPeriodType.WEEK, periodValue),
+                    regionRankScores.stream()
+                            .map(score -> new ScoreEntry(score.getRegionId(), score.getTotalDistance()))
+                            .toList()
+            );
+
             metrics.recordBuildSuccess(Duration.between(startedAt, Instant.now()));
             log.info(
-                    "WEEK 랭킹 ZSET 재빌드 완료 (WEEK ranking zset rebuild completed): periodValue={}, globalMembers={}, regionKeys={}, regionMembers={}",
+                    "WEEK 랭킹 ZSET 재빌드 완료 (WEEK ranking zset rebuild completed): periodValue={}, globalMembers={}, regionKeys={}, regionMembers={}, regionRankingMembers={}",
                     periodValue,
                     globalCount,
                     regionKeyCount,
-                    regionMemberCount
+                    regionMemberCount,
+                    regionRankingCount
             );
         } catch (Exception e) {
             metrics.recordBuildError(Duration.between(startedAt, Instant.now()));
@@ -115,4 +130,3 @@ public class RankingZsetWeekRebuildService {
         }
     }
 }
-

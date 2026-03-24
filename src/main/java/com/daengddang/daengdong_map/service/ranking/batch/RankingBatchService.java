@@ -47,9 +47,11 @@ public class RankingBatchService {
         for (RankingPeriodType periodType : RankingPeriodType.values()) {
             runUpsertByPeriodType(periodType);
         }
+        PeriodRange weekRange = rankingPeriodResolver.resolveCurrentPeriodRange(RankingPeriodType.WEEK);
+        String weekPeriodValue = rankingPeriodResolver.resolvePeriodValue(RankingPeriodType.WEEK, weekRange);
         rankingZsetWeekRebuildService.rebuildCurrentWeek();
-        long personalDeleted = rankingPersonalCacheStore.evictAll();
-        long regionDeleted = rankingRegionSummaryCacheStore.evictAll();
+        long personalDeleted = rankingPersonalCacheStore.evictPeriod(RankingPeriodType.WEEK.name(), weekPeriodValue);
+        long regionDeleted = rankingRegionSummaryCacheStore.evictPeriod(RankingPeriodType.WEEK.name(), weekPeriodValue);
         long contributionDeleted = rankingRegionContributionCacheStore.evictAll();
         log.info(
                 "랭킹 캐시 무효화 완료 - 배치 업서트/재빌드 이후 (Ranking caches evicted after ranking upsert batch and rebuild): personalDeleted={}, regionDeleted={}, contributionDeleted={}",

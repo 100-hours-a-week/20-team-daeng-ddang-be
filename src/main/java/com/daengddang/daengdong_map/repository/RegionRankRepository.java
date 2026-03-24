@@ -2,6 +2,7 @@ package com.daengddang.daengdong_map.repository;
 
 import com.daengddang.daengdong_map.domain.ranking.RegionRank;
 import com.daengddang.daengdong_map.domain.ranking.RankingPeriodType;
+import com.daengddang.daengdong_map.repository.projection.RegionDistanceScoreView;
 import com.daengddang.daengdong_map.repository.projection.RegionRankView;
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RegionRankRepository extends JpaRepository<RegionRank, Long> {
+
+    @Query("""
+            select
+                region.id as regionId,
+                rank.totalDistance as totalDistance
+            from RegionRank rank
+            join rank.region region
+            where rank.periodType = :periodType
+              and rank.periodValue = :periodValue
+            order by rank.ranking asc, region.id asc
+            """)
+    List<RegionDistanceScoreView> findScoresByPeriod(
+            @Param("periodType") RankingPeriodType periodType,
+            @Param("periodValue") String periodValue
+    );
 
     @Query("""
             select

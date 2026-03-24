@@ -6,11 +6,13 @@ import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExternalAnalysisTaskStateService {
@@ -30,7 +32,12 @@ public class ExternalAnalysisTaskStateService {
         );
         boolean changed = updated > 0;
         if (changed) {
+            log.info("외부 분석 작업 상태 전이 성공. taskId={}, from={}, to={}",
+                    taskId, ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING);
             eventPublisher.publishEvent(new AnalysisTaskStatusChangedEvent(taskId));
+        } else {
+            log.warn("외부 분석 작업 상태 전이 실패. taskId={}, expectedStatus={}, targetStatus={}",
+                    taskId, ExternalAnalysisTaskStatus.PENDING, ExternalAnalysisTaskStatus.RUNNING);
         }
         return changed;
     }

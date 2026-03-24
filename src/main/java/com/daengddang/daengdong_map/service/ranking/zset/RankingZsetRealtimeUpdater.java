@@ -41,6 +41,7 @@ public class RankingZsetRealtimeUpdater {
             Long regionId = resolveRegionId(dog);
             if (regionId != null) {
                 addScore(keyFactory.dogRegionKey(regionId, RankingPeriodType.WEEK, periodValue), dogId, distanceMeters);
+                addScore(keyFactory.regionKey(RankingPeriodType.WEEK, periodValue), String.valueOf(regionId), distanceMeters);
             }
 
             metrics.recordUpdateSuccess();
@@ -72,4 +73,3 @@ public class RankingZsetRealtimeUpdater {
         return region.getId();
     }
 }
-
