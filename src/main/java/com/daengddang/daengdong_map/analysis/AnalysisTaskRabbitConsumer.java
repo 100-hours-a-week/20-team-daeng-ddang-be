@@ -10,6 +10,7 @@ import com.daengddang.daengdong_map.service.ExternalAnalysisTaskProcessor;
 import com.daengddang.daengdong_map.service.ExternalAnalysisTaskStateService;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -33,9 +34,19 @@ public class AnalysisTaskRabbitConsumer {
     public void consume(AnalysisTaskMessage message, Message amqpMessage) {
         Instant startedAt = Instant.now();
         int retryCount = AnalysisTaskRetryMessageRecoverer.readRetryCount(amqpMessage);
+        Long queueDelayMs = millisBetween(message.requestedAt(), LocalDateTime.now());
+        Long brokerDelayMs = millisBetween(message.publishedAt(), LocalDateTime.now());
 
-        log.info("분석 작업 메시지 수신. taskId={}, type={}, traceId={}, queue={}, retryCount={}",
-                message.taskId(), message.type(), message.traceId(), properties.getQueue(), retryCount);
+        log.info("분석 작업 메시지 수신. taskId={}, type={}, traceId={}, queue={}, retryCount={}, requestedAt={}, publishedAt={}, queueDelayMs={}, brokerDelayMs={}",
+                message.taskId(),
+                message.type(),
+                message.traceId(),
+                properties.getQueue(),
+                retryCount,
+                message.requestedAt(),
+                message.publishedAt(),
+                queueDelayMs,
+                brokerDelayMs);
 
         try {
             externalAnalysisTaskProcessor.processOrThrow(message.taskId());
@@ -154,5 +165,12 @@ public class AnalysisTaskRabbitConsumer {
         return errorCode == ErrorCode.AI_SERVER_TIMEOUT
                 || errorCode == ErrorCode.AI_SERVER_INTERNAL_ERROR
                 || errorCode == ErrorCode.AI_SERVER_CONNECTION_FAILED;
+    }
+
+    private Long millisBetween(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        return Duration.between(from, to).toMillis();
     }
 }

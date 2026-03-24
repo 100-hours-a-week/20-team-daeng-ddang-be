@@ -15,6 +15,7 @@ import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import com.daengddang.daengdong_map.repository.ExpressionRepository;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -64,6 +65,11 @@ public class ExternalAnalysisTaskProcessor {
                 task.getRequestedAt(),
                 task.getWalk() == null ? null : task.getWalk().getId(),
                 task.getDog() == null ? null : task.getDog().getId());
+        log.info("외부 분석 작업 처리 준비 완료. taskId={}, type={}, preRunningDelayMs={}, currentStatus={}",
+                taskId,
+                task.getType(),
+                millisBetween(task.getRequestedAt(), LocalDateTime.now()),
+                task.getStatus());
 
         if (!externalAnalysisTaskStateService.markRunningIfPending(taskId)) {
             ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
@@ -139,6 +145,13 @@ public class ExternalAnalysisTaskProcessor {
             throw new BaseException(ErrorCode.INVALID_FORMAT);
         }
         return task.getVideoUrl();
+    }
+
+    private Long millisBetween(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) {
+            return null;
+        }
+        return Duration.between(from, to).toMillis();
     }
 
     private record TaskResultRef(String resultType, String resultId) {
