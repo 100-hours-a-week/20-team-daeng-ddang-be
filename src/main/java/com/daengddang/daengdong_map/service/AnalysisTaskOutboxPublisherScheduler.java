@@ -54,8 +54,14 @@ public class AnalysisTaskOutboxPublisherScheduler {
             long startedAt = System.nanoTime();
             try {
                 AnalysisTaskMessage message = objectMapper.readValue(outbox.getPayload(), AnalysisTaskMessage.class);
+                log.info("analysis task outbox publish start. outboxId={}, taskId={}, eventType={}, createdAt={}",
+                        outbox.getId(), outbox.getTaskId(), outbox.getEventType(), outbox.getCreatedAt());
                 analysisTaskRabbitPublisher.publish(message);
                 outbox.markPublished(LocalDateTime.now());
+                log.info("analysis task outbox publish success. outboxId={}, taskId={}, publishDelayMs={}",
+                        outbox.getId(),
+                        outbox.getTaskId(),
+                        Duration.between(outbox.getCreatedAt(), LocalDateTime.now()).toMillis());
                 analysisTaskOutboxMetrics.recordPublishSuccess(Duration.ofNanos(System.nanoTime() - startedAt));
             } catch (Exception ex) {
                 outbox.markFailed(

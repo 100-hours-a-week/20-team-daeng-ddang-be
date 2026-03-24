@@ -13,6 +13,8 @@ import com.daengddang.daengdong_map.dto.request.healthcare.HealthcareAnalyzeRequ
 import com.daengddang.daengdong_map.dto.response.healthcare.HealthcareAnalyzeResponse;
 import com.daengddang.daengdong_map.repository.ExternalAnalysisTaskRepository;
 import com.daengddang.daengdong_map.repository.ExpressionRepository;
+import java.time.Duration;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,12 +50,20 @@ public class ExternalAnalysisTaskProcessor {
     }
 
     public void processOrThrow(String taskId) {
+        Instant startedAt = Instant.now();
         ExternalAnalysisTask task = externalAnalysisTaskRepository.findWithContextByTaskId(taskId)
                 .orElse(null);
         if (task == null) {
             log.warn("외부 분석 작업을 찾을 수 없습니다. taskId={}", taskId);
             return;
         }
+
+        log.info("외부 분석 작업 처리 시작. taskId={}, type={}, requestedAt={}, walkId={}, dogId={}",
+                taskId,
+                task.getType(),
+                task.getRequestedAt(),
+                task.getWalk() == null ? null : task.getWalk().getId(),
+                task.getDog() == null ? null : task.getDog().getId());
 
         if (!externalAnalysisTaskStateService.markRunningIfPending(taskId)) {
             ExternalAnalysisTaskStatus currentStatus = externalAnalysisTaskRepository.findStatusByTaskId(taskId)
@@ -80,7 +90,9 @@ public class ExternalAnalysisTaskProcessor {
 
         TaskResultRef resultRef = execute(task);
         externalAnalysisTaskStateService.markSuccessIfRunning(taskId, resultRef.resultType(), resultRef.resultId());
-        log.info("외부 분석 작업 처리 성공. taskId={}, type={}", taskId, task.getType());
+        log.info("외부 분석 작업 처리 성공. taskId={}, type={}, durationMs={}, resultType={}, resultId={}",
+                taskId, task.getType(), Duration.between(startedAt, Instant.now()).toMillis(),
+                resultRef.resultType(), resultRef.resultId());
     }
 
     private TaskResultRef execute(ExternalAnalysisTask task) {
