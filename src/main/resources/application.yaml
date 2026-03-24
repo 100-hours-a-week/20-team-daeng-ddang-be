@@ -92,10 +92,10 @@ ai:
     healthcare-chat-uri: ${FASTAPI_HEALTHCARE_CHAT_URI}
     connect-timeout: ${FASTAPI_CONNECT_TIMEOUT:2s}
     read-timeout: ${FASTAPI_READ_TIMEOUT:80s}
-    mission-hard-timeout: ${FASTAPI_MISSION_HARD_TIMEOUT:80s}
-    expression-hard-timeout: ${FASTAPI_EXPRESSION_HARD_TIMEOUT:15s}
-    healthcare-hard-timeout: ${FASTAPI_HEALTHCARE_HARD_TIMEOUT:20s}
-    chat-hard-timeout: ${FASTAPI_CHAT_HARD_TIMEOUT:10s}
+    mission-hard-timeout: ${FASTAPI_MISSION_HARD_TIMEOUT:120s}
+    expression-hard-timeout: ${FASTAPI_EXPRESSION_HARD_TIMEOUT:60s}
+    healthcare-hard-timeout: ${FASTAPI_HEALTHCARE_HARD_TIMEOUT:60s}
+    chat-hard-timeout: ${FASTAPI_CHAT_HARD_TIMEOUT:30s}
     retry-max-attempts: ${FASTAPI_RETRY_MAX_ATTEMPTS:2}
     retry-wait-duration: ${FASTAPI_RETRY_WAIT_DURATION:500ms}
     bulkhead-max-concurrent-calls: ${FASTAPI_BULKHEAD_MAX_CONCURRENT_CALLS:32}
